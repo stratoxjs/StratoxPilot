@@ -1,0 +1,42 @@
+{
+  "name": "@stratox/pilot",
+  "version": "1.0.0",
+  "description": "StratoxPilot is a JavaScript Router Library that enables precise navigation within web applications through the use of regular expressions for route definition.",
+  "type": "module",
+  "main": "src/index.js",
+  "directories": {
+    "src": "src"
+  },
+  "scripts": {
+    "test": "jasmine"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/stratoxjs/StratoxPilot.git"
+  },
+  "bugs": {
+    "url": "https://stratox.wazabii.se/issues",
+    "email": "daniel.ronkainen@wazabii.se"
+  },
+  "homepage": "https://stratox.wazabii.se/router",
+  "keywords": [
+    "javascript",
+    "template",
+    "library",
+    "agnostic",
+    "module",
+    "component",
+    "modern",
+    "views",
+    "templates",
+    "customtags",
+    "forms",
+    "fields",
+    "formbuilder"
+  ],
+  "author": "Daniel Ronkainen",
+  "license": "Apache-2.0",
+  "devDependencies": {
+    "jasmine": "^5.1.0"
+  }
+}
