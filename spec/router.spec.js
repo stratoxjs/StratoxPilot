@@ -1,35 +1,7 @@
 import { Router } from "../src/Router.js";
 import { Dispatcher } from "../src/Dispatcher.js";
-import { Uri } from "../src/Uri.js";
 
 
-
-const uri = new Uri({
-    scheme: 'https',
-    host: 'example.com',
-    port: '443',
-    user: 'guest',
-    pass: 'pass123',
-    path: '/test/test2',
-    query: 'id=1&slug=<em>2</em>',
-    fragment: 'test'
-});
-
-
-const { href, protocol, host, hostname, port, pathname, search, hash, origin } = new URL("https://user:pass@test.se:80/www/ww2?id=1&sluf=<em>wddwq</em>#wwwww");
-
-console.log(href, protocol, host, hostname, port, pathname, search, hash, origin);
-
-console.log("URI:");
-console.log(uri.getScheme());
-console.log(uri.getUserInfo());
-console.log(uri.getPort());
-console.log(uri.getAuthority());
-console.log(uri.getHost());
-console.log(uri.getPath());
-console.log(uri.getQuery());
-console.log(uri.getFragment());
-console.log(uri.getUri());
 
 /*
 
