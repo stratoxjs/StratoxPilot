@@ -6,9 +6,15 @@ const dispatcher = new Dispatcher();
 
 
 
-router.get('{page:www/[^/]+}/www/{id:wwww}', function() {
+router.get('', function() {
+    console.log("START");
+});
+
+
+router.get('{page:www/[^/]+}/test1/{id:test2}', function() {
     console.log("ABOUT");
 });
+
 
 dispatcher.dispatcher(router, dispatcher.serverParams("fragment"), function(data, status) {
     console.log("STATYS:", data, status);

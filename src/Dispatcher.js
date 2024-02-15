@@ -7,9 +7,6 @@ import { Router } from "./Router.js";
  */
 export class Dispatcher {
 
-    //#handlerEvent = 'dispatched'; // The router event listner name
-    //#currentRoute;
-
     #handler;
     #state = {};
     #router;
@@ -25,8 +22,6 @@ export class Dispatcher {
         this.#handler = this.initStateHandler(this.#configs.server);
     }
 
-   
-
     /**
      * Object to form data
      * @param  {object} request
@@ -40,7 +35,6 @@ export class Dispatcher {
         return formData;
     }
 
-
     /**
      * This will handle the post method
      * @return {void}
@@ -51,17 +45,7 @@ export class Dispatcher {
             event.preventDefault();
             const form = event.target;
             const formData = new FormData(form);
-
             inst.postTo(form.action, formData);
-
-            /*
-            inst.pushState(form.action, {
-                method: "POST",
-                request: {
-                    post: formData,
-                }
-            });
-             */
         });
     }
 
@@ -99,6 +83,11 @@ export class Dispatcher {
         return formData;
     }
 
+    /**
+     * Get serverParams as dynamic variable
+     * @param  {string} key
+     * @return {callable|object}
+     */
     serverParams(key) {
         if(typeof key === "string") {
             const inst = this;
@@ -109,6 +98,11 @@ export class Dispatcher {
         return this.#handler.getState().server;
     }
 
+    /**
+     * Get request as dynamic variable
+     * @param  {string} key
+     * @return {callable|object}
+     */
     request(key) {
         if(typeof key === "string") {
             const inst = this;
@@ -142,40 +136,19 @@ export class Dispatcher {
      */
     dispatcher(routeCollection, path, fn) {
         const inst = this;
-        //this.#distpatchPost();
+        this.#distpatchPost();
         this.#handler.on('popstate', function(event) {
-
-
             let uriPath = (typeof path === "function") ? path() : path;
             if(typeof uriPath !== "string") {
                 throw new Error("Path iswqwdqwd");
             }
-
             inst.#state = inst.#assignRequest(event.details);
             const dispatcher = inst.validateDispatch(routeCollection, inst.#state.method, uriPath);
             const response = inst.#assignResponse(dispatcher);
             fn.apply(inst, [response, response.status]);
-           
         });
 
         this.#handler.emitPopState();
-
-        /*
-        inst.state(function(updatedRoute) {
-            console.log("EHHH:", updatedRoute);
-            inst.#state = inst.#assignRequest(Object.assign((updatedRoute?.state ?? {}), {
-                request: {
-                    get: requestGet,
-                    post: (updatedRoute?.state?.request?.post ?? {})
-                }
-            }));
-            const dispatcher = inst.validateDispatch(routeCollection, inst.#state.method, updatedRoute.hash);
-            const response = inst.#assignResponse(dispatcher);
-            fn.apply(inst, [response, response.status]);
-        });
-
-        this.dispatch();
-         */
     }
 
     /**
@@ -190,186 +163,63 @@ export class Dispatcher {
             throw new Error("The first function argumnets is expected to be an instance of Startox Router class.");
         }
 
-        //console.log(routeCollection, method, dipatch)
         const inst = this;
         const router = routeCollection.getRouters();
         const uri = dipatch.split("/");
-        let httpStatus = 404;
-        
-
-
+        let current = {}, parts = uri, 
+        regexItems = Array(), vars = {}, path = Array(), hasError = false, statusError = 404;
         for(let i = 0; i < router.length; i++) {
-
-            const extractRouterData = inst.#escapeForwardSlash(router[i].pattern);
-            const routerData = extractRouterData.pattern.split("/");
-
-
-            let regexItems = Array(), vars = Array();
-
-            for(let x = 0; x < routerData.length; x++) {
-                const regex = inst.#getMatchPattern(routerData[x]);
-                const value = regex[1] ? regex[2] : routerData[x];
-                regexItems.push(value);
-
-
-                const key = (regex[1] ?? x);
-
-                vars.push({
-                    [key]: regex[2]
-                });
-
-
-                /*
-                let A = Array(), B = "";
-                for(let x = 0; x < uri.length; x++) {
-
-                    A.push(uri[x]);
-
-                    let test = A.join("/").match(value);
-                    if(test){
-                        A = Array();
-                        console.log(key, test[0]);
-                        delete routerData[x];
-                        
-                    }
-                }
-                 */
-           
-                
-
-                
-            }
-
-
-
-
-
-
-
-
-
-
-            const routerRegex = regexItems.join("/");
-            const validateRouter = dipatch.match(routerRegex);
-
-
-            for(let i = 0; i < vars.length; i++) {
-
-
-
-
-
-            }
-
-
-            console.log(vars, routerRegex, validateRouter);
-            // PATH = validateRouter[0]
-
-
-
-
             
-
-        }
-
-
-
-        for(let i = 0; i < router.length; i++) {
-            let hasEqualMatch, hasMatch, validVars = Array(), vars = {};
-            const extractRouterData = inst.#escapeForwardSlash(router[i].pattern);
-            const routerData = extractRouterData.pattern.split("/");
-            const expectedLength = routerData.length;
-
-
-            //extractRouterData.length
-
-
-            
-            //let matches = match.match(/\[(.*?)\]/g);
-
-
-
-            
-            let uriBV = Array(), calcLength = expectedLength;
+            regexItems = Array();
+            vars = {};
+            path = Array();
+            hasError = false;
 
             if(router[i].verb.includes(method)) {
-                for(let x = 0; x < uri.length; x++) {
-                    const data = (routerData[x] ?? routerData?.[routerData.length-1]);
-                    if(data !== undefined) {
-                        const regex = inst.#getMatchPattern(data);
-                        const uriB = (regex[2] ?? "").split("/");
+                const extractRouterData = inst.#escapeForwardSlash(router[i].pattern);
+                const routerData = extractRouterData.split("/");
 
+                for(let x = 0; x < routerData.length; x++) {
+                    const regex = inst.#getMatchPattern(routerData[x]);
+                    const value = regex[1] ? regex[2] : routerData[x];
+                    const key = (regex[1] ?? x);
+                    regexItems.push(value);
 
-                        
-                        if(uriB.length > 1) {
-                            uriBV = uriBV.concat(uriB)
-                        } else {
-                            if(uri[x] === regex[2]) uriBV.push(regex[2]);
-                        }
+                    let part;
+                    if(part = inst.#validateParts(parts, value)) {
+                        // Escaped
+                        vars[key] = part;
+                        path = path.concat(part);
+                        parts = parts.slice(part.length);
 
-                        hasEqualMatch = (uri[x] === uriBV[x]);
-
-
-
-
-
-                        
-                        //console.log(x, uri[x], uriBV[x], hasEqualMatch);
-                        
-
-                        
-
-                        if(hasEqualMatch) {
-                            validVars.push(uri[x]);
-
-                        } else if(regex[0]) {
-                            hasMatch = uri[x].match(regex[0]);
-                            hasMatch = (hasMatch && hasMatch[0] && uri.length <= expectedLength);
-
-                            if(hasMatch) {
-                                if(regex[1]) {
-                                    if(vars[regex[1]]) {
-                                        vars[regex[1]].push(uri[x]);
-                                    } else {
-                                        vars[regex[1]] = [uri[x]];
-                                    }
-                                }
-                                validVars.push(uri[x]);
-                            }
-
-                            // Will delete data, so it wont "re-validate" for nested slashes inside pattern like [^/]
-                            if(regex[2] !== '.+') {
-                                delete routerData[x];
-                            }
-
-                        }
-
-                        
-                        if((!hasEqualMatch && !hasMatch)) {
-                            break;
-                        }
-                       
+                    } else {
+                        hasError = true;
+                        break;
                     }
                 }
+                if(!hasError) {
+                    current = router[i];
+                    break;
+                }
+            } else {
+                statusError = 405;
             }
 
-            if(hasEqualMatch || hasMatch) {
-                //console.log(hasEqualMatch, uri.length, expectedLength);
-
-                return this.#assignResponse({
-                    verb: method,
-                    status: (uri.length === expectedLength ? 200 : 404),
-                    controller: router[i].controller,
-                    path: validVars,
-                    vars: vars,
-                    request: {
-                        get: this.#state?.request?.get,
-                        post: this.#state?.request?.post
-                    }
-                });
-            }            
+            //const routerRegex = regexItems.join("/");
+            //const validateRouter = dipatch.match(routerRegex);
         }
-        return { status: httpStatus };
+
+        return {
+            verb: method,
+            status: (!hasError && (uri.length === path.length) ? 200 : statusError),
+            controller: (current?.controller ?? null),
+            path: path,
+            vars: vars,
+            request: {
+                get: this.#state?.request?.get,
+                post: this.#state?.request?.post
+            }
+        };
     }
 
      /**
@@ -401,6 +251,25 @@ export class Dispatcher {
     }
 
     /**
+     * This will validate each part
+     * @param  {array} uri      Uri path as array items
+     * @param  {string} value   Pattern value to validate part againts
+     * @return {array|false}    Will return each valid part as array items
+     */
+    #validateParts(uri, value) {
+        let uriParts = Array();
+        for(let x = 0; x < uri.length; x++) {
+            uriParts.push(uri[x]);
+            const regex = new RegExp('^'+value+'$');
+            const join = uriParts.join("/");
+            if(join.match(regex)) {
+                return uriParts;
+            }
+        }
+        return false;
+    }
+
+    /**
      * Build and return patterns
      * @param  {string} matchStr
      * @return {array}
@@ -423,21 +292,9 @@ export class Dispatcher {
      * @return {string}
      */
     #escapeForwardSlash(pattern) {
-        let count = 0;
-        const occ = pattern.replace(/{[^}]+}/g, (match, a) => {
-
-            //let matches = match.match(/\[(.*?)\]/g);
-
-            return match.replace(/\//g, function(x){
-                count+=1;
-                return "[#SC#]";
-            });
+        return pattern.replace(/{[^}]+}/g, (match, a) => {
+            return match.replace(/\//g, "[#SC#]");
         });
-
-        return {
-            pattern: occ,
-            length: count
-        }
     }
 
     /**
