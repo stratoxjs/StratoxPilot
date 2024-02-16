@@ -2,8 +2,8 @@ import { StateHandler } from "./StateHandler.js";
 import { Router } from "./Router.js";
 
 /**
- * Startox FastRoute and dispatcher
- * Is an 
+ * Startox Pilot 
+ * Is an Router and Dispatcher
  */
 export class Dispatcher {
 
@@ -11,6 +11,14 @@ export class Dispatcher {
     #state = {};
     #router;
     #configs = {};
+
+    #specCharMap = {
+        '&': '&amp;',
+        '<': '&lt;',
+        '>': '&gt;',
+        '"': '&quot;',
+        "'": '&#39;'
+    };
 
     constructor(configs = {}) {
         const inst = this;
@@ -20,33 +28,6 @@ export class Dispatcher {
         });
 
         this.#handler = this.initStateHandler(this.#configs.server);
-    }
-
-    /**
-     * Object to form data
-     * @param  {object} request
-     * @return {object} Instance of formData.
-     */
-    objToFormData(request) {
-        const formData = new FormData();
-        for(const [key, value] of Object.entries(request)) {
-            formData.append(key, value);
-        }
-        return formData;
-    }
-
-    /**
-     * This will handle the post method
-     * @return {void}
-     */
-    #distpatchPost() {
-        const inst = this;
-        if(this.#configs.enablePostRequest) document.addEventListener('submit', function(event) {
-            event.preventDefault();
-            const form = event.target;
-            const formData = new FormData(form);
-            inst.postTo(form.action, formData);
-        });
     }
 
     navigateTo(path, request = {}) {
@@ -67,7 +48,6 @@ export class Dispatcher {
      * @return {Object} Instance of formData
      */
     postTo(path, request = {}) {
-
         let formData = request;
         if(!(request instanceof FormData)) {
             formData = this.objToFormData(request);
@@ -140,7 +120,7 @@ export class Dispatcher {
         this.#handler.on('popstate', function(event) {
             let uriPath = (typeof path === "function") ? path() : path;
             if(typeof uriPath !== "string") {
-                throw new Error("Path iswqwdqwd");
+                throw new Error("Path has to be returned a string!");
             }
             inst.#state = inst.#assignRequest(event.details);
             const dispatcher = inst.validateDispatch(routeCollection, inst.#state.method, uriPath);
@@ -167,36 +147,57 @@ export class Dispatcher {
         const router = routeCollection.getRouters();
         const uri = dipatch.split("/");
         let current = {}, parts = uri, 
-        regexItems = Array(), vars = {}, path = Array(), hasError = false, statusError = 404;
+        regexItems = Array(), vars = {}, path = Array(), hasError = false, statusError = 404, foundResult = false;
         for(let i = 0; i < router.length; i++) {
             
             regexItems = Array();
             vars = {};
             path = Array();
             hasError = false;
+            parts = uri;
 
             if(router[i].verb.includes(method)) {
-                const extractRouterData = inst.#escapeForwardSlash(router[i].pattern);
+
+
+                // ON GOING
+                let lossyPattern = "", countLossy = 1;
+                let strictPattern = router[i].pattern.replace(/\[(.*?)\]/g, function(matchA, matchB) {
+                    /*
+                    console.log(matchB, countLossy);
+                    if(countLossy > 1) {
+                        throw new Error("wddwqdwqwqs.");
+                    }
+                    */
+                    lossyPattern = matchB;
+                    countLossy++;
+                    return matchB;
+                });
+                
+
+                const extractRouterData = inst.#escapeForwardSlash(strictPattern);
                 const routerData = extractRouterData.split("/");
 
                 for(let x = 0; x < routerData.length; x++) {
                     const regex = inst.#getMatchPattern(routerData[x]);
-                    const value = regex[1] ? regex[2] : routerData[x];
+                    const hasRegex = (regex[1] !== undefined);
+                    const value = (hasRegex) ? regex[2] : routerData[x];
                     const key = (regex[1] ?? x);
                     regexItems.push(value);
 
                     let part;
-                    if(part = inst.#validateParts(parts, value)) {
+                    if(part = inst.#validateParts(parts, value, hasRegex, lossyPattern)) {
                         // Escaped
                         vars[key] = part;
                         path = path.concat(part);
                         parts = parts.slice(part.length);
 
                     } else {
+                        
                         hasError = true;
                         break;
                     }
                 }
+
                 if(!hasError) {
                     current = router[i];
                     break;
@@ -220,6 +221,26 @@ export class Dispatcher {
                 post: this.#state?.request?.post
             }
         };
+    }
+
+    /**
+     * This will validate each part
+     * @param  {array} uri      Uri path as array items
+     * @param  {string} value   Pattern value to validate part againts
+     * @return {array|false}    Will return each valid part as array items
+     */
+    #validateParts(uri, value, hasRegex, lossyPattern) {
+        let uriParts = Array();
+        for(let x = 0; x < uri.length; x++) {
+            uriParts.push(uri[x]);
+            const join = uriParts.join("/");
+            const regex = new RegExp('^'+value+'$');
+            //const regexLossy = new RegExp('^'+lossyPattern+'?$');
+            if(join.match(regex)) {
+                return uriParts;
+            }
+        }
+        return false;
     }
 
      /**
@@ -251,22 +272,30 @@ export class Dispatcher {
     }
 
     /**
-     * This will validate each part
-     * @param  {array} uri      Uri path as array items
-     * @param  {string} value   Pattern value to validate part againts
-     * @return {array|false}    Will return each valid part as array items
+     * Object to form data
+     * @param  {object} request
+     * @return {object} Instance of formData.
      */
-    #validateParts(uri, value) {
-        let uriParts = Array();
-        for(let x = 0; x < uri.length; x++) {
-            uriParts.push(uri[x]);
-            const regex = new RegExp('^'+value+'$');
-            const join = uriParts.join("/");
-            if(join.match(regex)) {
-                return uriParts;
-            }
+    objToFormData(request) {
+        const formData = new FormData();
+        for(const [key, value] of Object.entries(request)) {
+            formData.append(key, value);
         }
-        return false;
+        return formData;
+    }
+
+    /**
+     * This will handle the post method
+     * @return {void}
+     */
+    #distpatchPost() {
+        const inst = this;
+        if(this.#configs.enablePostRequest) document.addEventListener('submit', function(event) {
+            event.preventDefault();
+            const form = event.target;
+            const formData = new FormData(form);
+            inst.postTo(form.action, formData);
+        });
     }
 
     /**
@@ -338,5 +367,34 @@ export class Dispatcher {
                 post: {}
             }
         }, state)
+    }
+
+
+     /**
+     * Escape special cahracters
+     * @return {string}
+     */
+    htmlspecialchars(value) {
+        const char  = this.#specCharMap;
+        const keys = Object.keys(char);
+        const regex = new RegExp('['+keys.join("|")+']', 'g');
+        return value.replace(regex, match => char[match]);
+    }
+
+    /**
+     * Decode html special characers
+     * @return {string}
+     */
+    htmlspecialchars_decode(value) {
+        const char = this.#specCharMap;
+        const values = Object.values(char);
+        const regex = new RegExp(values.join("|"), 'g');
+        return value.replace(regex, match => {
+            return Object.keys(char).find(key => char[key] === match)
+        });
+    }
+    
+    strToQryPar(value) {
+        return [...new URLSearchParams(value).entries()].reduce((items, [key, val]) => Object.assign(items, { [key]: val }), {})
     }
 }

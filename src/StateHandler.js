@@ -98,11 +98,7 @@ export class StateHandler {
         return (typeof this.#state === "object") ? this.#state : {};
     }
 
- 
-    /*
-    static parseStr(value) {
-        return [...new URLSearchParams(value).entries()].reduce((items, [key, val]) => Object.assign(items, { [key]: val }), {})
-    }
-     */
-    
+
+   
+
 }

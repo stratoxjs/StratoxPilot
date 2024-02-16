@@ -6,6 +6,7 @@ export class Router {
 
     static #validVerb = ["GET", "POST"]; // Allowed verbs
     #router = Array();
+    //#vaildRouterPattern = Array();
 
     constructor() {
     }
@@ -35,6 +36,8 @@ export class Router {
         if(typeof pattern !== "string") {
             throw new Error('Argumnent 2 (pattern) needs to be a string.');
         }
+
+        //this.#vaildRouterPattern.push(pattern);
         this.#router.push({
             verb: Router.validateVerb(verb),
             pattern: pattern,

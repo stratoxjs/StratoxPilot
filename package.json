@@ -38,7 +38,9 @@
   "author": "Daniel Ronkainen",
   "license": "Apache-2.0",
   "devDependencies": {
-    "http-server": "^14.1.1",
     "jasmine": "^5.1.0"
+  },
+  "dependencies": {
+    "http-server": "^14.1.1"
   }
 }

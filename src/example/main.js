@@ -5,16 +5,38 @@ const router = new Router();
 const dispatcher = new Dispatcher();
 
 
+/*
 
 router.get('', function() {
     console.log("START");
 });
 
+ */
 
-router.get('{page:www/[^/]+}/test1/{id:test2}', function() {
+
+"required string NOT REQUIRED STRING"
+
+router.get('{page:test}/param1/param2[/param3]', function() {
+    console.log("TEST 1");
+});
+
+/*
+
+router.get('{page:[^/]+}', function() {
+    console.log("TEST 2");
+});
+
+router.get('{page:test}', function() {
+    console.log("TEST 3");
+});
+
+
+
+router.get('{page:www/[^/]+}/test11/{id:test22}', function() {
     console.log("ABOUT");
 });
 
+ */
 
 dispatcher.dispatcher(router, dispatcher.serverParams("fragment"), function(data, status) {
     console.log("STATYS:", data, status);
