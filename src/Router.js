@@ -6,7 +6,7 @@ export class Router {
 
     static #validVerb = ["GET", "POST"]; // Allowed verbs
     #router = Array();
-    //#vaildRouterPattern = Array();
+    #protocol = {};
 
     constructor() {
     }
@@ -31,18 +31,22 @@ export class Router {
             verb = Array(verb);
         }
         if(!Array.isArray(verb)) {
-            throw new Error('Argumnent 1 (verb) needs to be string or array.');
+            throw new Error('Argument 1 (verb) needs to be string or array.');
         }
         if(typeof pattern !== "string") {
-            throw new Error('Argumnent 2 (pattern) needs to be a string.');
+            throw new Error('Argument 2 (pattern) needs to be a string.');
         }
 
-        //this.#vaildRouterPattern.push(pattern);
+        if(typeof this.#protocol[pattern] === "string") {
+            throw new Error('Argument 2 (pattern: '+pattern+') already exists.');
+        }
+        
         this.#router.push({
             verb: Router.validateVerb(verb),
             pattern: pattern,
             controller: controller
         });
+        this.#protocol[pattern] = pattern;
     }
 
     /**

@@ -158,23 +158,7 @@ export class Dispatcher {
 
             if(router[i].verb.includes(method)) {
 
-
-                // ON GOING
-                let lossyPattern = "", countLossy = 1;
-                let strictPattern = router[i].pattern.replace(/\[(.*?)\]/g, function(matchA, matchB) {
-                    /*
-                    console.log(matchB, countLossy);
-                    if(countLossy > 1) {
-                        throw new Error("wddwqdwqwqs.");
-                    }
-                    */
-                    lossyPattern = matchB;
-                    countLossy++;
-                    return matchB;
-                });
-                
-
-                const extractRouterData = inst.#escapeForwardSlash(strictPattern);
+                const extractRouterData = inst.#escapeForwardSlash(router[i].pattern);                
                 const routerData = extractRouterData.split("/");
 
                 for(let x = 0; x < routerData.length; x++) {
@@ -185,16 +169,19 @@ export class Dispatcher {
                     regexItems.push(value);
 
                     let part;
-                    if(part = inst.#validateParts(parts, value, hasRegex, lossyPattern)) {
+                    if(part = inst.#validateParts(parts, value)) {
                         // Escaped
                         vars[key] = part;
                         path = path.concat(part);
                         parts = parts.slice(part.length);
 
                     } else {
-                        
                         hasError = true;
-                        break;
+                        if(routerData[x].substring(routerData[x].length-2) == ")?") {
+                            const reValidate = inst.#getMatchPattern(routerData[x]);
+                            hasError = !value.match(reValidate[0]);
+                        }
+                        if(hasError) break;
                     }
                 }
 
@@ -202,12 +189,10 @@ export class Dispatcher {
                     current = router[i];
                     break;
                 }
+
             } else {
                 statusError = 405;
             }
-
-            //const routerRegex = regexItems.join("/");
-            //const validateRouter = dipatch.match(routerRegex);
         }
 
         return {
@@ -229,17 +214,17 @@ export class Dispatcher {
      * @param  {string} value   Pattern value to validate part againts
      * @return {array|false}    Will return each valid part as array items
      */
-    #validateParts(uri, value, hasRegex, lossyPattern) {
+    #validateParts(uri, value) {
         let uriParts = Array();
         for(let x = 0; x < uri.length; x++) {
             uriParts.push(uri[x]);
             const join = uriParts.join("/");
             const regex = new RegExp('^'+value+'$');
-            //const regexLossy = new RegExp('^'+lossyPattern+'?$');
             if(join.match(regex)) {
                 return uriParts;
             }
         }
+
         return false;
     }
 
@@ -308,9 +293,9 @@ export class Dispatcher {
         if(matchPatter) {
             const patterns = matchPatter.map(item => item.slice(1, -1));
             const extractPattern = patterns[0].split(":");
-            const patternValue = this.#unescapeForwardSlash(extractPattern[extractPattern.length-1]);
+            const patternValue = this.#unescapeForwardSlash(extractPattern[extractPattern.length-1].trim());
             const regex = new RegExp('^'+patternValue+'$');
-            return [regex, ((extractPattern.length > 1) ? extractPattern[0] : ""), patternValue]
+            return [regex, ((extractPattern.length > 1) ? extractPattern[0].trim() : ""), patternValue]
         }
         return [];
     }
