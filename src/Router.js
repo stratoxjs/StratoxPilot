@@ -37,7 +37,7 @@ export class Router {
             throw new Error('Argument 2 (pattern) needs to be a string.');
         }
 
-        if(typeof this.#protocol[pattern] === "string") {
+        if(typeof this.#protocol?.[verb]?.[pattern] === "string") {
             throw new Error('Argument 2 (pattern: '+pattern+') already exists.');
         }
         
@@ -46,7 +46,7 @@ export class Router {
             pattern: pattern,
             controller: controller
         });
-        this.#protocol[pattern] = pattern;
+        this.#protocol[verb] = {[pattern]: pattern}
     }
 
     /**

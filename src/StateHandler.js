@@ -97,8 +97,5 @@ export class StateHandler {
         }
         return (typeof this.#state === "object") ? this.#state : {};
     }
-
-
-   
-
+    
 }

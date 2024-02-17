@@ -30,15 +30,22 @@ export class Dispatcher {
         this.#handler = this.initStateHandler(this.#configs.server);
     }
 
+    /**
+     * Navigate to a new page
+     * @param  {string} path    A uri path or anchor with path e.g. #page1/page2/page3
+     * @param  {Object} request GET request
+     * @return {void}
+     */
     navigateTo(path, request = {}) {
-        this.pushState(path, {
+        const data = this.buildGetPath(path, request)
+
+        this.pushState(data.path, {
             method: "GET",
             request: {
-                get: request,
+                get: data.query,
                 post: {}
             },
         });
-        return request;
     }
 
     /**
@@ -122,6 +129,7 @@ export class Dispatcher {
             if(typeof uriPath !== "string") {
                 throw new Error("Path has to be returned a string!");
             }
+            event.details.request.get = inst.buildQueryObj(event.details.request.get);
             inst.#state = inst.#assignRequest(event.details);
             const dispatcher = inst.validateDispatch(routeCollection, inst.#state.method, uriPath);
             const response = inst.#assignResponse(dispatcher);
@@ -146,8 +154,8 @@ export class Dispatcher {
         const inst = this;
         const router = routeCollection.getRouters();
         const uri = dipatch.split("/");
-        let current = {}, parts = uri, 
-        regexItems = Array(), vars = {}, path = Array(), hasError = false, statusError = 404, foundResult = false;
+        let current = {}, parts, regexItems, vars = {}, path = Array(), hasError, 
+        statusError = 404, foundResult = false;
         for(let i = 0; i < router.length; i++) {
             
             regexItems = Array();
@@ -171,17 +179,16 @@ export class Dispatcher {
                     let part;
                     if(part = inst.#validateParts(parts, value)) {
                         // Escaped
-                        vars[key] = part;
+                        if(part[0]) {
+                            vars[key] = part;
+                        }
+                        
                         path = path.concat(part);
                         parts = parts.slice(part.length);
 
-                    } else {
+                    } else if(this.#isLossyParam(routerData[x])) {
                         hasError = true;
-                        if(routerData[x].substring(routerData[x].length-2) == ")?") {
-                            const reValidate = inst.#getMatchPattern(routerData[x]);
-                            hasError = !value.match(reValidate[0]);
-                        }
-                        if(hasError) break;
+                        break;
                     }
                 }
 
@@ -190,16 +197,19 @@ export class Dispatcher {
                     break;
                 }
 
-            } else {
+            } else if(method !== "GET") {
                 statusError = 405;
             }
         }
+
+        const filterPath = [...path];
+        filterPath.shift();
 
         return {
             verb: method,
             status: (!hasError && (uri.length === path.length) ? 200 : statusError),
             controller: (current?.controller ?? null),
-            path: path,
+            path: filterPath,
             vars: vars,
             request: {
                 get: this.#state?.request?.get,
@@ -215,15 +225,20 @@ export class Dispatcher {
      * @return {array|false}    Will return each valid part as array items
      */
     #validateParts(uri, value) {
-        let uriParts = Array();
+        const inst = this;
+        let uriParts = Array(), hasError = false;
         for(let x = 0; x < uri.length; x++) {
-            uriParts.push(uri[x]);
+            uriParts.push(inst.htmlspecialchars(decodeURIComponent(uri[x])));
             const join = uriParts.join("/");
             const regex = new RegExp('^'+value+'$');
             if(join.match(regex)) {
-                return uriParts;
+                if(value !== ".+") return uriParts;
+            } else {
+                hasError = true;
             }
         }
+        if(!hasError && value === ".+") return uriParts;
+
 
         return false;
     }
@@ -238,18 +253,20 @@ export class Dispatcher {
             throw new Error("The argumnet 1 (serverParams) expects an dynamic object that can act as an server parameter.");
         }
 
+        const inst = this;
         return new StateHandler(function() {
             const location = (window?.location ?? {});
+            const query = inst.#paramsToObj(location.search ?? "");
             return {
                 method: "GET",
                 server: Object.assign(serverParams, {
                     host: (location.href ?? ""),
                     fragment: ((typeof location.hash === "string") ? location.hash.substring(1) : ""),
                     path: (location.pathname ?? ""),
-                    query: (location.search ?? "")
+                    query: query
                 }),
                 request: {
-                    get: {},
+                    get: query,
                     post: {}
                 }
             }
@@ -275,7 +292,8 @@ export class Dispatcher {
      */
     #distpatchPost() {
         const inst = this;
-        if(this.#configs.enablePostRequest) document.addEventListener('submit', function(event) {
+        //if(this.#configs.enablePostRequest) 
+        document.addEventListener('submit', function(event) {
             event.preventDefault();
             const form = event.target;
             const formData = new FormData(form);
@@ -298,6 +316,16 @@ export class Dispatcher {
             return [regex, ((extractPattern.length > 1) ? extractPattern[0].trim() : ""), patternValue]
         }
         return [];
+    }
+
+    /**
+     * Check if is a loosy pattern parameter
+     * @param  {string}  pattern
+     * @return {Boolean}
+     */
+    #isLossyParam(pattern) {
+        const value = pattern.substring(pattern.length-2);
+        return (value !== "?(" && value !== ")?");
     }
 
     /**
@@ -333,7 +361,7 @@ export class Dispatcher {
             path: Array(),
             vars: {},
             request: {
-                get: {},
+                get: this.buildQueryObj({}),
                 post: {}
             }
         }, response);
@@ -348,12 +376,11 @@ export class Dispatcher {
         return Object.assign({
             method: "GET",
             request: {
-                get: {},
+                get: this.buildQueryObj({}),
                 post: {}
             }
         }, state)
     }
-
 
      /**
      * Escape special cahracters
@@ -379,7 +406,53 @@ export class Dispatcher {
         });
     }
     
-    strToQryPar(value) {
-        return [...new URLSearchParams(value).entries()].reduce((items, [key, val]) => Object.assign(items, { [key]: val }), {})
+    /**
+     * Start URLSearchParams instance
+     * @param  {object|string} value
+     * @return {URLSearchParams}
+     */
+    #params(value) {
+        return new URLSearchParams(value);
     }
+
+    /**
+     * Query string to object
+     * @param  {string|URLSearchParams} value
+     * @return {object}
+     */
+    #paramsToObj(value) {
+        if(!(value instanceof URLSearchParams)) {
+            value = this.#params(value);
+        }
+        return [...value.entries()].reduce((items, [key, val]) => Object.assign(items, { [key]: val }), {})
+    }
+
+    /**
+     * Build a query search parama
+     * @param  {object} request
+     * @return {URLSearchParams}
+     */
+    buildQueryObj(request) {
+        return this.#params(Object.assign(this.serverParams("query")(), request));
+    }
+
+    /**
+     * Build query path, string and fragment
+     * @param  {string} path 
+     * @param  {object} request
+     * @return {object}
+     */
+    buildGetPath(path, request) {
+        const query = this.#params(request);
+        const queryStr = query.toString();
+        if(queryStr.length > 0) {
+            if(path.indexOf("#") === 0) {
+                path = "?"+queryStr+path;
+            } else {
+                path += "?"+queryStr;
+            }
+        }
+        return {path: path, query: query};
+    }
+
 }
