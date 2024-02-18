@@ -38,7 +38,7 @@ export class StateHandler {
             return cb(event);
         }
         
-        if(this.#config.module) {
+        if(this.#config.module && typeof window === "object") {
             window.addEventListener(eventName, handler)
             this.#unbind[eventName] = () => window.removeEventListener(eventName, handler)
         }
@@ -46,6 +46,10 @@ export class StateHandler {
     }
 
     emit(eventName, data) {
+        if(typeof this.#handlers[eventName] !== "object") {
+            throw new Error("Trying to emit to an event ("+eventName+") does not yet exists.");
+        }
+
         for (const handler of this.#handlers[eventName]) {
             handler(data);
         }
@@ -60,15 +64,17 @@ export class StateHandler {
     }
 
     pushState(path, state = {}) {
+
         if(typeof path !== "string") {
             throw new Error("Argument 1 (path) in pushState method has to be a string");
         }
         if(typeof state !== "object") {
             throw new Error("Argument 2 (state) in pushState method has to be a object");
         }
+
         this.#currentState = function() {
-            if(this.#config.module) {
-                history.pushState(state, '', path);           
+            if(this.#config.module && typeof history === "object") {
+                history.pushState(state, '', path);
             }
             this.emit("popstate", {state: state});
         }

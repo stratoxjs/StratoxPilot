@@ -11,6 +11,7 @@ export class Dispatcher {
     #state = {};
     #router;
     #configs = {};
+    #form = null;
 
     #specCharMap = {
         '&': '&amp;',
@@ -22,10 +23,11 @@ export class Dispatcher {
 
     constructor(configs = {}) {
         const inst = this;
-        this.#configs = Object.assign(configs, {
-            enablePostRequest: true,
+        this.#configs = Object.assign({
+            catchForms: true, // Auto catch forms
+            fragmentPrefix: "", // Prefix hash fragment
             server: {}
-        });
+        }, configs);
 
         this.#handler = this.initStateHandler(this.#configs.server);
     }
@@ -37,12 +39,12 @@ export class Dispatcher {
      * @return {void}
      */
     navigateTo(path, request = {}) {
-        const data = this.buildGetPath(path, request)
-
+        const data = this.buildGetPath(path, request);
         this.pushState(data.path, {
             method: "GET",
             request: {
-                get: data.query,
+                path: path,
+                get: (data.query ?? {}),
                 post: {}
             },
         });
@@ -59,10 +61,10 @@ export class Dispatcher {
         if(!(request instanceof FormData)) {
             formData = this.objToFormData(request);
         }
-
         this.pushState(path, {
             method: "POST",
             request: {
+                path: path,
                 get: {},
                 post: formData
             },
@@ -71,33 +73,58 @@ export class Dispatcher {
     }
 
     /**
+     * Push post state
+     * @param  {string} path     URI path or hash
+     * @param  {Object} request  Add post form data 
+     * @return {Object} Instance of formData
+     */
+    mapTo(verb, path, requestGet = {}, requestPost = {}) {
+        let formData = requestPost;
+        const data = this.buildGetPath(path, requestGet);
+
+        if(!(requestPost instanceof FormData)) {
+            formData = this.objToFormData(requestPost);
+        }
+
+        this.pushState(data.path, {
+            method: verb,
+            path: path,
+            request: {
+                path: path,
+                get: data.query,
+                post: formData
+            },
+        });
+        return formData;
+    }
+
+    /**
      * Get serverParams as dynamic variable
-     * @param  {string} key
+     * @param  {string} key Get param, if not specified then get all
+     * @param  {object} obj Add object that you want to merge current param with (KEY is required)
      * @return {callable|object}
      */
-    serverParams(key) {
+    serverParams(key, obj) {
         if(typeof key === "string") {
-            const inst = this;
-            return function() {
-                return inst.#handler.getState().server[key];
-            }
+            return Object.assign(this.#handler.getState().server[key], obj);
         }
         return this.#handler.getState().server;
     }
 
     /**
      * Get request as dynamic variable
-     * @param  {string} key
+     * @param  {string} key Get param, if not specified then get all
+     * @param  {object} obj Add object that you want to merge current param with (KEY is required)
      * @return {callable|object}
      */
-    request(key) {
+    request(key, obj) {
         if(typeof key === "string") {
             const inst = this;
             return function() {
-                return inst.#handler.getState().request[key];
-            }
+                return Object.assign((inst.#state.request?.[key] ?? "/"), obj);
+            }   
         }
-        return this.#handler.getState().request;
+        return this.#state.request;
     }
 
 
@@ -123,15 +150,12 @@ export class Dispatcher {
      */
     dispatcher(routeCollection, path, fn) {
         const inst = this;
-        this.#distpatchPost();
+        this.#catchFormEvents();
         this.#handler.on('popstate', function(event) {
-            let uriPath = (typeof path === "function") ? path() : path;
-            if(typeof uriPath !== "string") {
-                throw new Error("Path has to be returned a string!");
-            }
             event.details.request.get = inst.buildQueryObj(event.details.request.get);
             inst.#state = inst.#assignRequest(event.details);
-            const dispatcher = inst.validateDispatch(routeCollection, inst.#state.method, uriPath);
+            const uriPath = inst.#getDynUri(path);
+            const dispatcher = inst.validateDispatch(routeCollection, inst.#state.method, inst.#getDynUri(path));
             const response = inst.#assignResponse(dispatcher);
             fn.apply(inst, [response, response.status]);
         });
@@ -202,8 +226,10 @@ export class Dispatcher {
             }
         }
 
-        const filterPath = [...path];
-        filterPath.shift();
+
+        const filterPath = [...path].filter(function(val) {
+            return (val !== "");
+        });
 
         return {
             verb: method,
@@ -249,28 +275,46 @@ export class Dispatcher {
      * @return {StateHandler}
      */
     initStateHandler(serverParams) {
-        if(typeof serverParams !== "object") {
-            throw new Error("The argumnet 1 (serverParams) expects an dynamic object that can act as an server parameter.");
-        }
-
         const inst = this;
+
         return new StateHandler(function() {
-            const location = (window?.location ?? {});
+
+
+            const location = (typeof window === "object") ? (window?.location ?? {}) : {};
+
             const query = inst.#paramsToObj(location.search ?? "");
+            const hash = ((typeof location.hash === "string") ? location.hash : "");
+            const fragment = hash.replace("#"+inst.#configs.fragmentPrefix, "");
+
             return {
                 method: "GET",
-                server: Object.assign(serverParams, {
+                server: Object.assign({
                     host: (location.href ?? ""),
-                    fragment: ((typeof location.hash === "string") ? location.hash.substring(1) : ""),
-                    path: (location.pathname ?? ""),
+                    hash: hash,
+                    fragment: "/"+fragment,
+                    path: (location.pathname ?? "/"),
                     query: query
-                }),
+
+                }, inst.#getDynUri(serverParams)),
                 request: {
                     get: query,
                     post: {}
                 }
             }
         });
+    }
+
+    /**
+     * Get possible dynamic Server parameters
+     * @param  {string} path
+     * @return {object}
+     */
+    #getDynUri(path) {
+        const uriPath = (typeof path === "function") ? path() : path;
+        if(typeof uriPath !== "string" && typeof uriPath !== "object") {
+            throw new Error("Path has to be returned a string or object!");
+        }
+        return uriPath;
     }
 
     /**
@@ -290,15 +334,27 @@ export class Dispatcher {
      * This will handle the post method
      * @return {void}
      */
-    #distpatchPost() {
+    #catchFormEvents() {
         const inst = this;
-        //if(this.#configs.enablePostRequest) 
-        document.addEventListener('submit', function(event) {
-            event.preventDefault();
-            const form = event.target;
-            const formData = new FormData(form);
-            inst.postTo(form.action, formData);
-        });
+        if(this.#configs.catchForms && (typeof document === "object")) {
+            document.addEventListener('submit', function(event) {
+                event.preventDefault();
+                inst.#form = event.target;
+
+                const formData = new FormData(inst.#form);
+                const method = (inst.#form?.method ?? "GET");
+                const url = new URL(inst.#form.action);
+                const action = url.origin+url.pathname+url.hash;
+
+                if(method.toUpperCase() === "POST") {
+                    inst.mapTo("POST", action, inst.#paramsToObj(url.search), formData);
+                } else {
+                    const assignObj = Object.assign(inst.#paramsToObj(url.search), inst.#paramsToObj(formData));
+                    inst.navigateTo(action, assignObj);
+                }
+                
+            });
+        }
     }
 
     /**
@@ -360,8 +416,9 @@ export class Dispatcher {
             controller: null,
             path: Array(),
             vars: {},
+            form: this.#form,
             request: {
-                get: this.buildQueryObj({}),
+                get: {},
                 post: {}
             }
         }, response);
@@ -376,7 +433,8 @@ export class Dispatcher {
         return Object.assign({
             method: "GET",
             request: {
-                get: this.buildQueryObj({}),
+                path: {},
+                get: {},
                 post: {}
             }
         }, state)
@@ -433,7 +491,7 @@ export class Dispatcher {
      * @return {URLSearchParams}
      */
     buildQueryObj(request) {
-        return this.#params(Object.assign(this.serverParams("query")(), request));
+        return this.#params(Object.assign(this.serverParams("query"), request));
     }
 
     /**
@@ -452,7 +510,7 @@ export class Dispatcher {
                 path += "?"+queryStr;
             }
         }
-        return {path: path, query: query};
+        return {path: path, query: request};
     }
 
 }

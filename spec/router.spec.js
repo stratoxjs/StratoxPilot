@@ -1,93 +1,77 @@
 import { Router } from "../src/Router.js";
 import { Dispatcher } from "../src/Dispatcher.js";
 
-
-
-/*
-
-global.document = {
-    addEventListener: (event, handler) => {
-        // Mock functionality or log for testing purposes
-        console.log(`Mock addEventListener called with: ${event}`);
-    }
-};
-
-global.CustomEvent = class {
-    constructor(event, params = { bubbles: false, cancelable: false, detail: undefined }) {
-        this.event = event;
-        this.bubbles = params.bubbles;
-        this.cancelable = params.cancelable;
-        this.detail = params.detail;
-    }
-};
-
-global.history = {
-    pushState: (state, title, url) => {
-        console.log(`Mock pushState called with url: ${url}`);
-    },
-    replaceState: (state, title, url) => {
-        console.log(`Mock replaceState called with url: ${url}`);
-    },
-    go: (num) => {
-        console.log(`Mock history go called with num: ${num}`);
-    }
-};
-
-global.location = {
-    href: 'http://example.com',
-    pathname: '/test/test2',
-    search: 'id=862&slug=lorem',
-    hash: '#test/test2',
-    assign: (url) => {
-        console.log(`Mock location assign called with url: ${url}`);
-    }
-};
-
-
 const router = new Router();
 const dispatcher = new Dispatcher();
 
+// Init routes
+router.get('/', true);
+router.get('/{type:a}/{page:test}/{id:[0-9]+}', true);
+router.get('/{type:a}/{page:test}/{id:[a-z]+}', true);
+router.get('/{type:b}/{page:.+}', true);
+router.get('/{type:c}/{page:[^/]+}/test2', true);
+router.post('/{type:d}/{page:contact}', true);
 
+// Dispatching the triggerd tests
+dispatcher.dispatcher(router, dispatcher.request("path"), function(data, status) {
+    describe("Validating router with path ("+data.path.join("/")+"):", function() {
 
-
-describe("Your test suite", function() {
-
-    beforeEach(function() {
-        router.get("test/test2", "string");
-    });
-
-    it("Dispatch", function() {
-        dispatcher.dispatcher(router, function(response, status) {
-
-            console.log("www", response, status);
-
+        it("Checking data types", function() {
+            expect(typeof data.verb).toBe("string");
+            expect(typeof data.status).toBe("number");
+            expect(typeof data.path).toBe("object");
+            expect(typeof data.vars).toBe("object");
+            expect(typeof data.request).toBe("object");
         });
-        expect(true).toBe(true);
-    });
-});
 
- */
+        it("Expects status 200", function() {
+            expect(status).toBe(200);
+        });
 
+        it("Has controller", function() {
+            expect(data.controller).toBe(true);
+        });
 
+        // Ignore start page
+        if(data.path.length > 0) {
 
-/*
-describe("Check allowd verb list", function() {
+            if(data.verb === "POST") {
+                it("Validating POST request", function() {
+                    expect(data.request.post instanceof FormData).toBe(true);
+                });
 
-    //const verbList = ["GET", "PUT"];
-    const verbList = Router.getValidVerbs();
-    beforeEach(function() {
-        this.isValidVerbs = true;
-        for(let i = 0; i < verbList.length; i++) {
-            this.isValidVerbs = Router.isValidVerb(verbList[i]);
+                it("POST request param", function() {
+                    expect(data.request.post.get("param")).toBe('10');
+                });
+
+            } else {
+                it("Validating GET request", function() {
+                    expect(data.request.get instanceof URLSearchParams).toBe(true);
+                });
+
+                it("Get request param", function() {
+                    expect(data.request.get.get("param")).toBe('10');
+                });
+            }
+
+            it("Check vars type is in place", function() {
+                expect(typeof data.vars.type[0]).toBe("string");
+            });
+
+            if(data.vars.type[0] === "b") {
+                it("Check page vars length", function() {
+                    expect(data.vars.page.length).toBe(3);
+                });
+            }
         }
-
     });
-
-    it("There is a VERB that has not been added to the validate list", function() {
-        expect(verbList).toEqual(jasmine.arrayContaining(Router.getValidVerbs()));
-    });
-
 });
 
- */
+
+// Trigger tests
+dispatcher.navigateTo("/a/test/12", { param: 10 });
+dispatcher.navigateTo("/a/test/ab", { param: 10 });
+dispatcher.navigateTo("/b/test/test2/test3", { param: 10 });
+dispatcher.navigateTo("/c/test/test2", { param: 10 });
+dispatcher.postTo("/d/contact", { param: 10 });
 
