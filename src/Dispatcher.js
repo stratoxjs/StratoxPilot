@@ -2,8 +2,9 @@ import { StateHandler } from "./StateHandler.js";
 import { Router } from "./Router.js";
 
 /**
- * Startox Pilot 
- * Is an Router and Dispatcher
+ * Stratox dispatcher
+ * Author: Daniel Ronkainen
+ * Apache License Version 2.0
  */
 export class Dispatcher {
 
@@ -40,6 +41,7 @@ export class Dispatcher {
      */
     navigateTo(path, request = {}) {
         const data = this.buildGetPath(path, request);
+
         this.pushState(data.path, {
             method: "GET",
             request: {
@@ -93,7 +95,7 @@ export class Dispatcher {
                 path: path,
                 get: data.query,
                 post: formData
-            },
+            }
         });
         return formData;
     }
@@ -106,7 +108,10 @@ export class Dispatcher {
      */
     serverParams(key, obj) {
         if(typeof key === "string") {
-            return Object.assign(this.#handler.getState().server[key], obj);
+            const inst = this;
+            return function() {
+                return Object.assign(inst.#handler.getState().server[key], obj);
+            }
         }
         return this.#handler.getState().server;
     }
@@ -150,7 +155,9 @@ export class Dispatcher {
      */
     dispatcher(routeCollection, path, fn) {
         const inst = this;
-        this.#catchFormEvents();
+        if(routeCollection.hasPostRoutes()) {
+            this.#catchFormEvents();
+        }
         this.#handler.on('popstate', function(event) {
             event.details.request.get = inst.buildQueryObj(event.details.request.get);
             inst.#state = inst.#assignRequest(event.details);
@@ -197,13 +204,14 @@ export class Dispatcher {
                     const regex = inst.#getMatchPattern(routerData[x]);
                     const hasRegex = (regex[1] !== undefined);
                     const value = (hasRegex) ? regex[2] : routerData[x];
-                    const key = (regex[1] ?? x);
                     regexItems.push(value);
 
                     let part;
                     if(part = inst.#validateParts(parts, value)) {
                         // Escaped
                         if(part[0]) {
+                            const int = (x-1);
+                            const key = (regex[1] ?? (int < 0 ? 0 : int));
                             vars[key] = part;
                         }
                         
@@ -226,15 +234,14 @@ export class Dispatcher {
             }
         }
 
-
-        const filterPath = [...path].filter(function(val) {
-            return (val !== "");
-        });
+        const statusCode = (!hasError && (uri.length === path.length) ? 200 : statusError);
+        const filterPath = [...path].filter((val) => (val !== ""));
+        const statusErrContr = routeCollection.getStatusError(statusCode);
 
         return {
             verb: method,
-            status: (!hasError && (uri.length === path.length) ? 200 : statusError),
-            controller: (current?.controller ?? null),
+            status: statusCode,
+            controller: (statusErrContr) ? statusErrContr: (current?.controller ?? null),
             path: filterPath,
             vars: vars,
             request: {
@@ -264,8 +271,6 @@ export class Dispatcher {
             }
         }
         if(!hasError && value === ".+") return uriParts;
-
-
         return false;
     }
 
@@ -276,16 +281,11 @@ export class Dispatcher {
      */
     initStateHandler(serverParams) {
         const inst = this;
-
         return new StateHandler(function() {
-
-
             const location = (typeof window === "object") ? (window?.location ?? {}) : {};
-
             const query = inst.#paramsToObj(location.search ?? "");
             const hash = ((typeof location.hash === "string") ? location.hash : "");
             const fragment = hash.replace("#"+inst.#configs.fragmentPrefix, "");
-
             return {
                 method: "GET",
                 server: Object.assign({
@@ -491,7 +491,7 @@ export class Dispatcher {
      * @return {URLSearchParams}
      */
     buildQueryObj(request) {
-        return this.#params(Object.assign(this.serverParams("query"), request));
+        return this.#params(Object.assign(this.serverParams("query")(), request));
     }
 
     /**
@@ -512,5 +512,4 @@ export class Dispatcher {
         }
         return {path: path, query: request};
     }
-
 }

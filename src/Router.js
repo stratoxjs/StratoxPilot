@@ -1,6 +1,7 @@
 /**
- * Startox FastRoute and dispatcher
- * Is an 
+ * Stratox route collection
+ * Author: Daniel Ronkainen
+ * Apache License Version 2.0
  */
 export class Router {
 
@@ -36,7 +37,6 @@ export class Router {
         if(typeof pattern !== "string") {
             throw new Error('Argument 2 (pattern) needs to be a string.');
         }
-
         if(typeof this.#protocol?.[verb]?.[pattern] === "string") {
             throw new Error('Argument 2 (pattern: '+pattern+') already exists.');
         }
@@ -46,7 +46,7 @@ export class Router {
             pattern: pattern,
             controller: controller
         });
-        this.#protocol[verb] = {[pattern]: pattern}
+        this.#protocol[verb] = {[pattern]: controller}
     }
 
     /**
@@ -68,6 +68,27 @@ export class Router {
     post(pattern, controller) {
         this.map("POST", pattern, controller);
     }
+
+    /**
+     * Get status error router IF specified
+     * @param  {int} status
+     * @return {mixed|false}
+     */
+    getStatusError(status) {
+        if(status !== 200) {
+            return (this.#protocol?.GET?.['[STATUS_ERROR]'] ?? false);
+        }
+        return false;
+    }
+
+    /**
+     * Check if any post routes exists
+     * @return {Boolean}
+     */
+    hasPostRoutes() {
+        return (this.#protocol?.POST ?? false);
+    }
+
 
     /**
      * Get all valid verbs
