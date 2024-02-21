@@ -1,7 +1,5 @@
 
-
-# StratoxPilot
-
+# Stratox Pilot
 Startox Pilot is a JavaScript router designed for ease of use and flexibility. It employs regular expressions to offer dynamic routing, allowing for both straightforward and complex navigation paths. As a universal library, it works across different platforms without needing any external dependencies. This independence makes Startox Pilot a practical option for developers in search of a dependable routing tool that combines advanced features and modular design in a compact package.
 
 ## Documentation
