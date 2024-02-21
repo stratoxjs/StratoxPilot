@@ -112,7 +112,6 @@ export class Dispatcher {
         return this.#state.request;
     }
 
-
     /**
      * Push state
      * @param  {string} path  URI
@@ -125,7 +124,6 @@ export class Dispatcher {
         if(!Router.isValidVerb(state.method)) {
             throw new Error('The verb (http method) "'+state.method+'" is not allowed. Supported verbs: '+Router.getValidVerbs().join(", "));
         }
-
         this.#handler.pushState(this.baseDir(path, true), state);
     }
 
@@ -518,8 +516,9 @@ export class Dispatcher {
             if(add === true) {
                 baseDir = this.#configs.root+baseDir;
             }
+            baseDir = this.addLeadingSlash(baseDir);
         }
-        return this.addLeadingSlash(baseDir);
+        return baseDir;
     }
     
     /**
