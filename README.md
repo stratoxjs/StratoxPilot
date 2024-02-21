@@ -7,7 +7,7 @@ Startox Pilot is a JavaScript router designed for ease of use and flexibility. I
 
 #### The documentation is divided into several sections:
 * [Installation](#installation)
-* [Configurations](#configurations)
+* [Configurations](#configuration-options)
 * [A basic example](#a-basic-example)
 * [Defining routes](#defining-routes)
 * [Dispatcher overview](#dispatcher-overview)
