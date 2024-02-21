@@ -7,8 +7,8 @@ Startox Pilot is a JavaScript router designed for ease of use and flexibility. I
 
 #### The documentation is divided into several sections:
 * [Installation](#installation)
-* [Configurations](#configuration-options)
 * [A basic example](#a-basic-example)
+* [Configuration Options](#configuration-options)
 * [Defining routes](#defining-routes)
 * [Dispatcher overview](#dispatcher-overview)
 * [Navigation](#navigation) 
@@ -76,7 +76,7 @@ dispatcher.dispatcher(router, dispatcher.serverParams("fragment"), function(resp
 // SCRIPT PATH: dispatcher.request("path") // Will work without browser window.history support
 ```
 
-## Configuration Options
+## Configuration options
 The dispatcher offers several configuration options to tailor its behavior to your application's needs.
 
 ```javascript
