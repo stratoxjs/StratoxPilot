@@ -119,7 +119,7 @@ router.get('/{page:about/location}', function(vars, request, path) {
 });
 ```
 ### Combining pattern with keywords
-Combining patterns with keywords enables you to create more expressive and versatile route definitions.
+Combining patterns with keywords e.g. (**post-**[0-9]+) enables you to create more expressive and versatile route definitions.
 ```javascript
 // Possible path: #articles/post-824/hello-world
 router.get('/articles/{id:post-[0-9]+}/{slug:[^/]+}', function(vars, request, path) {
