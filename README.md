@@ -1,9 +1,18 @@
+
 # StratoxPilot
 
-Startox Pilot is an efficient and user-friendly JavaScript router. It uses regular expressions for dynamic and adaptable routing, meaning you can get as simple or as complex as you need with your navigation, and Startox Pilot can handle it. As a Universal JavaScript Library, Startox Pilot is platform-agnostic, operating independently without external dependencies. This makes it a versatile choice for developers seeking a reliable, high-performance routing solution.
+Startox Pilot is a JavaScript router designed for ease of use and flexibility. It employs regular expressions to offer dynamic routing, allowing for both straightforward and complex navigation paths. As a universal library, it works across different platforms without needing any external dependencies. This independence makes Startox Pilot a practical option for developers in search of a dependable routing tool that combines advanced features and modular design in a compact package.
 
-> Stratox pilot is quite advance and modular router and state handler in
-> a small package.
+## Documentation
+
+#### The documentation is divided into several sections:
+* [Installation](#installation)
+* [A basic example](#a-basic-example)
+* [Defining routes](#defining-routes)
+* [Dispatcher overview](#dispatcher-overview)
+* [Navigation](#navigation) 
+* [Form submission](#form-submission)
+* [Have any questions](#have-any-questions)
 
 ## Installation
 ```javascript
@@ -11,7 +20,7 @@ npm install @stratox/pilot
 ```
 
 ##  A basic example
-Bellow is  a basic but complete example. I breakdown in the guide bellow.
+Below is a simple yet comprehensive example. Each component will be explored in further detail later in this guide.
 ```javascript
 import { Router } from "Router";
 import { Dispatcher } from "Dispatcher";
@@ -60,49 +69,40 @@ dispatcher.dispatcher(router, dispatcher.serverParams("fragment"), function(resp
 // URI HASH: dispatcher.serverParams("fragment") // Fragment is HASH without "#" character.
 // URI PATH: dispatcher.serverParams("path") // Regular URI path
 // SCRIPT PATH: dispatcher.request("path") // Will work without browser window.history support
-
-// You can very easily make GET requests/navigate to a new page with:
-// dispatcher.navigateTo("#articles/824/hello-world", { test: "A get request" });
-
-// You can very easily make POST requests/navigate to a new page with:
-// dispatcher.postTo("#post/contact", { test: "A post request" });
-// Read more bellow
 ```
 
-
 ## Defining routes
-At this moment there exist 2 router types `get` and `post`.  The structure will look like this for them both:
+In Stratox Pilot, there are two primary router types: `get` and `post`. Both types follow the same structural format, as illustrated below, with the key difference being that they will expect different request (se navigation for more information)
 ```
 router.get(string pattern, mixed call);
 router.post(string pattern, mixed call);
 ```
 #### Arguments
-* **Pattern (string):** Expects URI path string with regular expression support.
-* **Call (mixed):** Any data type (callable,  anonymous function, string, number,  bool...) is actually allow, you would tho usually want to feed it a function of sort, witch is done in the dispatcher. In my examples I will use a regular callable function.
+* **pattern (string):** This parameter expects a URI path in the form of a string, which may include regular expressions for more complex matching criteria.
+* **call (mixed):** This parameter can accept any data type, such as a callable, anonymous function, string, number, or boolean. However, it is most common to use a function. For the purposes of this guide, I am use a regular callable function in my examples.
 
-### Routes
-The routes first parameter expects  a URI path string. I really basic example would be:
+### A really Basic example
 ```javascript
 // Possible path: #about
 router.get('/about', function(vars, request, path) {
 });
 ```
-You can add multiple paths.
+And you can of course **add multiple** paths.
 ```javascript
 // Possible path: #about/contact
 router.get('/about/contact', function(vars, request, path) {
 });
 ```
-### Use regular expressions 
-To use regular expressions you need to enclose the pattern inside **curly brackets: {PATTERN}**. 
+
+### Using Regular Expressions
+To incorporate regular expressions in routing patterns, enclose the expression within **curly brackets: `{PATTERN}`**. This syntax allows for flexible and powerful URL matching based on specified patterns.
 ```javascript
 // Possible path: #about/location/stockholm
 router.get('/about/location/{[a-z]+}', function(vars, request, path) {
 });
 ```
-
-### Bind router pattern to a key
-It is highly recommended to specify each URI path that you want to access with a **key**. 
+### Binding Router Patterns to a Key
+It is strongly advised to associate each URI path you wish to access with a specific **key**. This approach enhances the clarity and manageability of your route definitions.
 ```javascript
 // Possible path: #about/location/stockholm
 router.get('/{page:about}/location/{city:[^/]+}', function(vars, request, path) {
@@ -110,7 +110,7 @@ router.get('/{page:about}/location/{city:[^/]+}', function(vars, request, path) 
 	//vars.city[0] is expected to be any string value (stockholm, denmark, new-york) from passed URI.
 });
 ```
-It is also allowed to combine a whole path to a **key**.
+You can also map an entire path to a **key**, allowing for more concise and organized route management.
 ```javascript
 // Possible path: #about/contact
 router.get('/{page:about/location}', function(vars, request, path) {
@@ -119,6 +119,7 @@ router.get('/{page:about/location}', function(vars, request, path) {
 });
 ```
 ### Combining pattern with keywords
+Combining patterns with keywords enables you to create more expressive and versatile route definitions.
 ```javascript
 // Possible path: #articles/post-824/hello-world
 router.get('/articles/{id:post-[0-9]+}/{slug:[^/]+}', function(vars, request, path) {
@@ -127,87 +128,174 @@ router.get('/articles/{id:post-[0-9]+}/{slug:[^/]+}', function(vars, request, pa
 });
 ```
 
-### None mandatory URI Paths.
-You can add one or more, **none mandatory** URI path by enclosing path name not slash with brackets and one question mark e.g. **/(PATH_NAME)?**. 
+### Optional URI Paths
+To define one or more optional URI paths, enclose the path segment (excluding the slash) in brackets followed by a question mark, for example: **/(PATH_NAME)?**. This syntax allows for flexibility in route matching by making certain path segments non-mandatory.
 ```javascript
 // Possible path: #articles
 // Possible path: #articles/post-824/hello-world
 router.get('/articles/({id:post-[0-9]+})?/({slug:[^/]+})?', function(vars, request, path) {
 });
 ```
-*What important to notice is that you should not enclose the **leading** slash. The leading slash will automatically be excluded from the pattern.*
+It's important to note that you should not enclose the **leading slash** in brackets. The leading slash is automatically excluded from the pattern, ensuring the correct interpretation of the route.
 
+## Dispatcher overview
 
-## Dispatcher
-The dispatcher will take routes, states and process them and the serve the matching result.
-```
+The dispatcher is essential for identifying and providing the appropriate route from the state handler. Designed for flexibility, it enables the incorporation of custom logic, such as AJAX, to tailor functionality to specific needs.
+
+```javascript
 dispatcher.dispatcher(Router routerCollection, serverParams, callable dispatch);
 ```
-#### Arguments
-* **routerCollection (Router):** Expects a instance of Router that will serve the dispacher with a route collection to validate against.
-* **serverParams:** This will be the current dynamic URI path that the dispacher will use.
-* **dispatch (callable):** Expects a callable function that will serve the possible matching result.
 
-### Router Collection 
-The router collection is expecting an instance of Router. That said you could create your own router collection and extend to Router, if you know how and want to add more HTTP Methods/verbs, structure or functionality.
+### Arguments
+- **routerCollection (Router):** Requires an instance of Router, supplying the dispatcher with a collection of routes for validation.
+- **serverParams:** Represents the current dynamic URI path for the dispatcher's use.
+- **dispatch (callable):** A callable function expected to process and return the match result.
 
-### Server params
-As mentioned above, the server params will be the current, dynamic URI path that the dispacher will use. This means it's used to server the dispatcher with some part of URI dynamically so that when that part changes the dispacher automatically detects those changes. There comes some option out of the box that you can use.
+### Router Collection
+This expects a Router instance, allowing for customization. You can create your router collection extending the Router class, potentially adding more HTTP methods, structure, or functionality.
+
+### Server Params
+Server params indicate the URL segment the dispatcher should utilize. These params dynamically target the specified URI segment. Several built-in options include:
 
 #### URI Fragment
-The URI Fragment is the URL hash or anchor without "#" character.
+Represents the URL hash or anchor minus the "#" character.
 ```javascript
-dispatcher.serverParams("fragment")
+dispatcher.serverParams("fragment");
 ```
 
 #### URI Path
-Server param path is the regular URI path.
+The regular URI path segment.
 ```javascript
-dispatcher.serverParams("path")
+dispatcher.serverParams("path");
 ```
 
 #### Script Path
-The Script Path will work without any support browser window.history support. And could be used for for example API routes or maybe shell command routes.
+Ideal for non-browser environments, supporting backend applications, APIs, or shell command routes.
 ```javascript
-dispatcher.request("path")
+dispatcher.request("path");
 ```
 
-### Dispatch
-The last argument in the dispatcher method is called ”dispatch". It expects a callable function that will serve the possible matching result both success with status code 200 or error with status code 404 (page not found) and 405 (Method not allowed). The callable take 2 arguments: response (object) and statusCode (int).
+### Dispatch Function
+The "dispatch" argument expects a callable function to process the match result, handling both successful (status code 200) and error outcomes (status code 404 for "page not found" and 405 for "Method not allowed"). The function receives two parameters: response (object) and statusCode (int).
 
-#### Arguments
-* **response (object):** will r
+#### Response Details
+- **response (object):** Provides an object with vital response data.
+- **statusCode (int):** Indicates the result, either successful (200) or error (404 or 405).
 
+### Basic Dispatcher Example
+Below is an excerpt from the example at the start of the guide:
 ```javascript
 dispatcher.dispatcher(router, dispatcher.serverParams("fragment"), function(response, statusCode) {
 	response.controller(response.vars, response.request, response.path, statusCode);
 });
 ```
-### Response
-A possible the response bellow could be outputted from a valid router URI pattern `"/{page:product}/{id:[0-9]+}/{slug:[^/]+}"`.
+
+### Understanding the Response
+The response structure, as illustrated with the router pattern `"/{page:product}/{id:[0-9]+}/{slug:[^/]+}"`, and URI path **/product/72/chesterfield** includes:
 
 ```json
 {
-	verb: "GET",
-	status: 200,
-	path: ["product", "72", "chesterfield"],
-	vars: {
-		page: ["product"],
-		id: ["72"],
-		slug: ["chesterfield"],
+	"verb": "GET",
+	"status": 200,
+	"path": ["product", "72", "chesterfield"],
+	"vars": {
+		"page": "product",
+		"id": "72",
+		"slug": "chesterfield"
 	},
-	form: {}, // Will catch submited DOM form element
-	request: {
-		get: URLSearchParams,// An instance of URLSearchParams
-		post: FormData, //An instance of FormData
+	"form": {},
+	"request": {
+		"get": "URLSearchParams",
+		"post": "FormData"
 	}
 }
 ```
-* **verb:** Is the expected HTTP method/verb (GET or POST)
-* **status:** Is the expected HTTP status code (200, 404 or 405)
-* **path:** Is the URI path as an array
-* **vars:** Is an object with expects array path attached to an key
-* **form:** Will catch submited DOM form element
-* **request.get:** An instance of URLSearchParams that will catch GET Requests and query strings
-* **request.post:** An instance of FormData that will catch POST Requests
+- **verb:** The HTTP method (GET or POST).
+- **status:** The HTTP status code (200, 404, or 405).
+- **path:** The URI path as an array.
+- **vars:** An object mapping path segments to keys.
+- **form:** Captures submitted DOM form elements.
+- **request.get:** An instance of URLSearchParams for GET requests.
+- **request.post:** An instance of FormData for POST requests.
 
+## Navigation
+
+The library provides intuitive navigation options to seamlessly transition between pages and initiate GET or POST requests.
+
+### Page Navigation / GET Request
+
+Initiating a GET request or navigating to a new page is straightforward. Such actions will correspond to a `get` router, with the request parameter converting into an instance of URLSearchParams for the request.
+
+```javascript
+// URI hash (fragment with hashtag) navigation
+dispatcher.navigateTo("#articles/824/hello-world", { test: "A get request" });
+
+// URI path navigation
+// dispatcher.navigateTo("/articles/824/hello-world", { test: "A get request" });
+```
+
+#### Arguments
+- **path (string):** Specifies the URI, which can be a **regular path** or a **hash**.
+- **request (object):** Sends a GET request or query string to the dispatcher. This will be transformed into an instance of URLSearchParams. When executed in a browser, the query string will also be appended to the URL in the address field.
+
+### POST Request
+
+Creating a POST request is similarly efficient, targeting a `post` router. The request parameter will be converted into an instance of FormData to facilitate the request.
+
+```javascript
+dispatcher.postTo("#post/contact", { firstname: "John", lastname: "Doe" });
+```
+
+#### Arguments
+- **path (string):** Defines the URI, which can be a **regular path** or a **hash**.
+- **request (object):** Submits a POST request to the dispatcher. This will be processed into an instance of FormData, allowing for detailed and structured data transmission.
+
+
+## Form submission
+
+Stratox Pilot supports automatic form submission handling through routers, a feature that must be explicitly enabled in the Dispatcher's configuration.
+
+### 1. Enable Form Submission
+To allow automatic catching and routing of form submissions, enable the `catchForms` option in the Dispatcher configuration:
+
+```javascript
+const dispatcher = new Dispatcher({
+    catchForms: true
+});
+```
+
+### 2. Define Routes
+Next, define the routes that will handle form submissions. For example, to handle a POST request:
+
+```javascript
+// POST: example.se/#post/contact
+router.post('/post/contact', function(vars, request, path) {
+    console.log('Contact form posted with form request:', request.post);
+});
+```
+
+### 3. Implement Form Submission
+Forms can use both GET and POST methods. Below is an example of a form designed to submit via POST:
+
+```html
+<form action="#post/contact" method="post">
+    <div>
+        <label>First name</label>
+        <input type="text" name="firstname" value="">
+    </div>
+    <div>
+        <label>Last name</label>
+        <input type="text" name="lastname" value="">
+    </div>
+    <div>
+        <label>E-mail</label>
+        <input type="email" name="email" value="">
+    </div>
+    <input type="submit" name="submit" value="Send">
+</form>
+```
+
+With these settings, the dispatcher will automatically capture and route submissions to the corresponding handler if a matching route is found.
+
+## Have any questions
+If there's anything unclear or you have further questions, feel free to reach out via email at daniel.ronkainen@wazabii.se.

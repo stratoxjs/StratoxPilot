@@ -25,7 +25,7 @@ export class Dispatcher {
     constructor(configs = {}) {
         const inst = this;
         this.#configs = Object.assign({
-            catchForms: true, // Auto catch forms
+            catchForms: false, // Auto catch forms
             fragmentPrefix: "", // Prefix hash fragment
             server: {}
         }, configs);
@@ -40,16 +40,7 @@ export class Dispatcher {
      * @return {void}
      */
     navigateTo(path, request = {}) {
-        const data = this.buildGetPath(path, request);
-
-        this.pushState(data.path, {
-            method: "GET",
-            request: {
-                path: path,
-                get: (data.query ?? {}),
-                post: {}
-            },
-        });
+        return this.mapTo("GET", path, request);
     }
 
     /**
@@ -59,19 +50,7 @@ export class Dispatcher {
      * @return {Object} Instance of formData
      */
     postTo(path, request = {}) {
-        let formData = request;
-        if(!(request instanceof FormData)) {
-            formData = this.objToFormData(request);
-        }
-        this.pushState(path, {
-            method: "POST",
-            request: {
-                path: path,
-                get: {},
-                post: formData
-            },
-        });
-        return formData;
+        return this.mapTo("POST", path, false, request);
     }
 
     /**
@@ -83,21 +62,20 @@ export class Dispatcher {
     mapTo(verb, path, requestGet = {}, requestPost = {}) {
         let formData = requestPost;
         const data = this.buildGetPath(path, requestGet);
-
+        
         if(!(requestPost instanceof FormData)) {
             formData = this.objToFormData(requestPost);
         }
 
         this.pushState(data.path, {
             method: verb,
-            path: path,
             request: {
-                path: path,
+                path: data.pathname,
                 get: data.query,
                 post: formData
             }
         });
-        return formData;
+        return (verb ? (data.query ?? requestGet) : formData);
     }
 
     /**
@@ -145,6 +123,7 @@ export class Dispatcher {
         if(!Router.isValidVerb(state.method)) {
             throw new Error('The verb (http method) "'+state.method+'" is not allowed. Supported verbs: '+Router.getValidVerbs().join(", "));
         }
+
         this.#handler.pushState(path, state);
     }
 
@@ -155,9 +134,8 @@ export class Dispatcher {
      */
     dispatcher(routeCollection, path, fn) {
         const inst = this;
-        if(routeCollection.hasPostRoutes()) {
-            this.#catchFormEvents();
-        }
+        //if(routeCollection.hasPostRoutes())
+        this.#catchFormEvents();
         this.#handler.on('popstate', function(event) {
             event.details.request.get = inst.buildQueryObj(event.details.request.get);
             inst.#state = inst.#assignRequest(event.details);
@@ -344,15 +322,14 @@ export class Dispatcher {
                 const formData = new FormData(inst.#form);
                 const method = (inst.#form?.method ?? "GET");
                 const url = new URL(inst.#form.action);
-                const action = url.origin+url.pathname+url.hash;
 
                 if(method.toUpperCase() === "POST") {
-                    inst.mapTo("POST", action, inst.#paramsToObj(url.search), formData);
+                    const action = url.origin+url.pathname+url.hash;
+                    inst.mapTo("POST", url, inst.#paramsToObj(url.search), formData);
                 } else {
                     const assignObj = Object.assign(inst.#paramsToObj(url.search), inst.#paramsToObj(formData));
-                    inst.navigateTo(action, assignObj);
+                    inst.navigateTo(url, assignObj);
                 }
-                
             });
         }
     }
@@ -501,15 +478,51 @@ export class Dispatcher {
      * @return {object}
      */
     buildGetPath(path, request) {
-        const query = this.#params(request);
-        const queryStr = query.toString();
-        if(queryStr.length > 0) {
-            if(path.indexOf("#") === 0) {
-                path = "?"+queryStr+path;
-            } else {
-                path += "?"+queryStr;
+        let pathname = path, queryStr = "";
+        if(typeof request === "object") {
+            const query = this.#params(request);
+            queryStr = query.toString();
+        }
+
+        if(path instanceof URL) {
+            const fragment = path.hash.substring(1);
+            pathname = path.pathname;
+            if(fragment.length > 0) {
+                pathname = "/"+fragment;
+            }
+            path = path.origin+path.pathname+this.getQueryStr(queryStr)+path.hash;
+
+        } else {
+            if(typeof queryStr === "string" && queryStr.length > 0) {
+                if(path.indexOf("#") === 0) {
+                    path = "/"+this.getQueryStr(queryStr)+path;
+                } else {
+                    path += this.getQueryStr(queryStr);
+                }
             }
         }
-        return {path: path, query: request};
+        return { path: path, query: request, pathname: pathname };
+    }
+
+    /**
+     * Add leading slash to string
+     * @param {strig} path
+     * @return {string}
+     */
+    addLeadingSlash(path) {
+        if(!path.startsWith("/")) path = "/"+path;
+        return path;
+    }
+
+    /**
+     * Return query string part if exist
+     * @param  {string} queryStr
+     * @return {string}
+     */
+    getQueryStr(queryStr) {
+        if(typeof queryStr === "string" && queryStr.length > 0) {
+            return "?"+queryStr;
+        }
+        return "";
     }
 }

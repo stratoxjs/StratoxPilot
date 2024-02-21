@@ -53,7 +53,7 @@ export class StateHandler {
      */
     emit(eventName, data) {
         if(typeof this.#handlers[eventName] !== "object") {
-            throw new Error("Trying to emit to an event ("+eventName+") does not yet exists.");
+            throw new Error("Trying to emit to an event ("+eventName+") does not yet exists. If you are trying to navigate the page then this should be done after the the dispatcher.");
         }
         for (const handler of this.#handlers[eventName]) {
             handler(data);

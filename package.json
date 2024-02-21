@@ -9,7 +9,8 @@
   },
   "scripts": {
     "start": "http-server-spa ./ ./index.html 8080",
-    "test": "jasmine"
+    "test": "jasmine",
+    "lint": "eslint . --ext .js --fix --ignore-path .gitignore"
   },
   "repository": {
     "type": "git",
@@ -22,26 +23,21 @@
   "homepage": "https://stratox.wazabii.se/router",
   "keywords": [
     "javascript",
-    "template",
     "library",
     "agnostic",
-    "module",
-    "component",
+    "universal",
+    "ECMAScript",
+    "Node",
+    "router",
     "modern",
-    "views",
-    "templates",
-    "customtags",
-    "forms",
-    "fields",
-    "formbuilder"
+    "routing",
+    "state handler"
   ],
   "author": "Daniel Ronkainen",
   "license": "Apache-2.0",
-  "dependencies": {
-    "http-server": "^14.1.1",
-    "http-server-spa": "^1.3.0"
-  },
   "devDependencies": {
+    "eslint": "^8.56.0",
+    "http-server-spa": "^1.3.0",
     "jasmine": "^5.1.0"
   }
 }
