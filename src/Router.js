@@ -1,5 +1,5 @@
 /**
- * Stratox route collection
+ * Stratox Route collection
  * Author: Daniel Ronkainen
  * Apache License Version 2.0
  */

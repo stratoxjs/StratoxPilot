@@ -2,7 +2,7 @@ import { StateHandler } from "./StateHandler.js";
 import { Router } from "./Router.js";
 
 /**
- * Stratox dispatcher
+ * Stratox Dispatcher
  * Author: Daniel Ronkainen
  * Apache License Version 2.0
  */
@@ -27,7 +27,9 @@ export class Dispatcher {
         this.#configs = Object.assign({
             catchForms: false, // Auto catch forms
             fragmentPrefix: "", // Prefix hash fragment
-            server: {}
+            server: {},
+            root: ""
+            
         }, configs);
 
         this.#handler = this.initStateHandler(this.#configs.server);
@@ -124,7 +126,7 @@ export class Dispatcher {
             throw new Error('The verb (http method) "'+state.method+'" is not allowed. Supported verbs: '+Router.getValidVerbs().join(", "));
         }
 
-        this.#handler.pushState(path, state);
+        this.#handler.pushState(this.baseDir(path, true), state);
     }
 
     /**
@@ -139,8 +141,8 @@ export class Dispatcher {
         this.#handler.on('popstate', function(event) {
             event.details.request.get = inst.buildQueryObj(event.details.request.get);
             inst.#state = inst.#assignRequest(event.details);
-            const uriPath = inst.#getDynUri(path);
-            const dispatcher = inst.validateDispatch(routeCollection, inst.#state.method, inst.#getDynUri(path));
+            const uriPath = inst.baseDir(inst.#getDynUri(path).toString());
+            const dispatcher = inst.validateDispatch(routeCollection, inst.#state.method, uriPath);
             const response = inst.#assignResponse(dispatcher);
             fn.apply(inst, [response, response.status]);
         });
@@ -324,7 +326,6 @@ export class Dispatcher {
                 const url = new URL(inst.#form.action);
 
                 if(method.toUpperCase() === "POST") {
-                    const action = url.origin+url.pathname+url.hash;
                     inst.mapTo("POST", url, inst.#paramsToObj(url.search), formData);
                 } else {
                     const assignObj = Object.assign(inst.#paramsToObj(url.search), inst.#paramsToObj(formData));
@@ -490,7 +491,7 @@ export class Dispatcher {
             if(fragment.length > 0) {
                 pathname = "/"+fragment;
             }
-            path = path.origin+path.pathname+this.getQueryStr(queryStr)+path.hash;
+            path = path.pathname+this.getQueryStr(queryStr)+path.hash;
 
         } else {
             if(typeof queryStr === "string" && queryStr.length > 0) {
@@ -505,8 +506,25 @@ export class Dispatcher {
     }
 
     /**
+     * Get base dir from config 
+     * @param {string}  path
+     * @param {bool}    add
+     * @return {string}
+     */
+    baseDir(path, add) {
+        let baseDir = path;
+        if(this.#configs.root.length > 0) {
+            baseDir = path.replace(this.#configs.root, "");
+            if(add === true) {
+                baseDir = this.#configs.root+baseDir;
+            }
+        }
+        return this.addLeadingSlash(baseDir);
+    }
+    
+    /**
      * Add leading slash to string
-     * @param {strig} path
+     * @param {string} path
      * @return {string}
      */
     addLeadingSlash(path) {

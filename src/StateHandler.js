@@ -1,5 +1,5 @@
 /**
- * Stratox state handler
+ * Stratox State handler
  * Author: Daniel Ronkainen
  * Apache License Version 2.0
  */
