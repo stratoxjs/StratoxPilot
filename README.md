@@ -1,4 +1,5 @@
 
+
 # StratoxPilot
 
 Startox Pilot is a JavaScript router designed for ease of use and flexibility. It employs regular expressions to offer dynamic routing, allowing for both straightforward and complex navigation paths. As a universal library, it works across different platforms without needing any external dependencies. This independence makes Startox Pilot a practical option for developers in search of a dependable routing tool that combines advanced features and modular design in a compact package.
@@ -63,7 +64,8 @@ router.get('[STATUS_ERROR]', function(vars, request, path, statusCode) {
 });
 
 dispatcher.dispatcher(router, dispatcher.serverParams("fragment"), function(response, statusCode) {
-	// response.controller what the routers above second argument is being fed with. 
+	// response.controller is equal to what the routers second argumentis being fed with.
+	// You can add Ajax here if you wish to trigger a ajax call.
 	response.controller(response.vars, response.request, response.path, statusCode);
 });
 // URI HASH: dispatcher.serverParams("fragment") // Fragment is HASH without "#" character.
@@ -128,6 +130,22 @@ router.get('/articles/{id:post-[0-9]+}/{slug:[^/]+}', function(vars, request, pa
 });
 ```
 
+### Handling Unlimited Nested Paths
+
+To accommodate an unlimited number of nested paths within your routing configuration, you can utilize the pattern `".+"`. However, it's strongly advised to precede such a router pattern with a specific prefix to maintain clarity and structure, as demonstrated in the example below with the prefix `/shop`.
+
+```javascript
+// Example of accessing a single category: #shop/furniture
+// Example of accessing multiple nested categories: #shop/furniture/sofas/chesterfield
+router.get('/shop/{category:.+}', function(vars, request, path) {
+    // Retrieves the last category segment from the path
+    const category = vars.category.pop();
+    console.log(`The current category is: ${category}`);
+});
+```
+
+This approach allows for the dynamic handling of deeply nested routes under a common parent path, offering flexibility in how URLs are structured and processed.
+
 ### Optional URI Paths
 To define one or more optional URI paths, enclose the path segment (excluding the slash) in brackets followed by a question mark, for example: **/(PATH_NAME)?**. This syntax allows for flexibility in route matching by making certain path segments non-mandatory.
 ```javascript
@@ -137,6 +155,18 @@ router.get('/articles/({id:post-[0-9]+})?/({slug:[^/]+})?', function(vars, reque
 });
 ```
 It's important to note that you should not enclose the **leading slash** in brackets. The leading slash is automatically excluded from the pattern, ensuring the correct interpretation of the route.
+
+### Catch status errors
+There is an optional and special router pattern that let's you catch HTTP Status Errors with in a router.
+```javascript
+router.get('[STATUS_ERROR]', function(vars, request, path, statusCode) {
+    if(statusCode === 404) {
+        console.log("404 Page not found", statusCode);
+    } else {
+        console.log("405 Method not allowed", statusCode);
+    }
+});
+```
 
 ## Dispatcher overview
 
