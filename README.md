@@ -1,4 +1,5 @@
 
+
 # Stratox Pilot
 Startox Pilot is a JavaScript router designed for ease of use and flexibility. It employs regular expressions to offer dynamic routing, allowing for both straightforward and complex navigation paths. As a universal library, it works across different platforms without needing any external dependencies. This independence makes Startox Pilot a practical option for developers in search of a dependable routing tool that combines advanced features and modular design in a compact package.
 
@@ -6,6 +7,7 @@ Startox Pilot is a JavaScript router designed for ease of use and flexibility. I
 
 #### The documentation is divided into several sections:
 * [Installation](#installation)
+* [Configurations](#configurations)
 * [A basic example](#a-basic-example)
 * [Defining routes](#defining-routes)
 * [Dispatcher overview](#dispatcher-overview)
@@ -25,7 +27,10 @@ import { Router } from "Router";
 import { Dispatcher } from "Dispatcher";
 
 const router = new Router();
-const dispatcher = new Dispatcher();
+const dispatcher = new Dispatcher({
+        catchForms: true, // Enable form catch
+        root: "/staging" // Add a root director 
+});
 
 // GET: example.se/
 router.get('/', function() {
@@ -62,14 +67,30 @@ router.get('[STATUS_ERROR]', function(vars, request, path, statusCode) {
 });
 
 dispatcher.dispatcher(router, dispatcher.serverParams("fragment"), function(response, statusCode) {
-	// response.controller is equal to what the routers second argumentis being fed with.
-	// You can add Ajax here if you wish to trigger a ajax call.
-	response.controller(response.vars, response.request, response.path, statusCode);
+    // response.controller is equal to what the routers second argumentis being fed with.
+    // You can add Ajax here if you wish to trigger a ajax call.
+    response.controller(response.vars, response.request, response.path, statusCode);
 });
 // URI HASH: dispatcher.serverParams("fragment") // Fragment is HASH without "#" character.
 // URI PATH: dispatcher.serverParams("path") // Regular URI path
 // SCRIPT PATH: dispatcher.request("path") // Will work without browser window.history support
 ```
+
+## Configuration Options
+The dispatcher offers several configuration options to tailor its behavior to your application's needs.
+
+```javascript
+const dispatcher = new Dispatcher({
+    catchForms: false, // Toggle form submission catching
+    root: "", // Set a root directory
+    fragmentPrefix: "" // Define a prefix for hash/fragment navigation
+});
+```
+
+### Configuration Parameters
+- **catchForms (bool):** When set to `true`, enables the dispatcher to automatically intercept and route form submissions. This feature facilitates seamless integration of form-based navigation within your application.
+- **root (string):** This parameter allows you to specify a root directory using an **absolute path**. This setting is crucial for defining where simulated or "pretty" URI paths begin. The necessity of this configuration depends on your specific deployment environment.
+- **fragmentPrefix (string):** This option lets you prepend a prefix to fragment or hash navigation calls. For instance, adding the "!" character means the URL's hash will be expected to appear as "#!your-hash", modifying the default behavior to accommodate specific routing schemes or to enhance compatibility with certain browsers or frameworks.
 
 ## Defining routes
 In Stratox Pilot, there are two primary router types: `get` and `post`. Both types follow the same structural format, as illustrated below, with the key difference being that they will expect different request (se navigation for more information)
@@ -106,16 +127,16 @@ It is strongly advised to associate each URI path you wish to access with a spec
 ```javascript
 // Possible path: #about/location/stockholm
 router.get('/{page:about}/location/{city:[^/]+}', function(vars, request, path) {
-	//vars.page[0] is expected to be "about"
-	//vars.city[0] is expected to be any string value (stockholm, denmark, new-york) from passed URI.
+    //vars.page[0] is expected to be "about"
+    //vars.city[0] is expected to be any string value (stockholm, denmark, new-york) from passed URI.
 });
 ```
 You can also map an entire path to a **key**, allowing for more concise and organized route management.
 ```javascript
 // Possible path: #about/contact
 router.get('/{page:about/location}', function(vars, request, path) {
-	//vars.page[0] is expected to be "about"
-	//vars.page[1] is expected to be "location"
+    //vars.page[0] is expected to be "about"
+    //vars.page[1] is expected to be "location"
 });
 ```
 ### Combining pattern with keywords
@@ -123,8 +144,8 @@ Combining patterns with keywords e.g. (**post-**[0-9]+) enables you to create mo
 ```javascript
 // Possible path: #articles/post-824/hello-world
 router.get('/articles/{id:post-[0-9]+}/{slug:[^/]+}', function(vars, request, path) {
-	//vars.id[0] is expected to be "post-824"
-	//vars.slug[0] is expected to be "hello-world"
+    //vars.id[0] is expected to be "post-824"
+    //vars.slug[0] is expected to be "hello-world"
 });
 ```
 
@@ -214,7 +235,7 @@ The "dispatch" argument expects a callable function to process the match result,
 Below is an excerpt from the example at the start of the guide:
 ```javascript
 dispatcher.dispatcher(router, dispatcher.serverParams("fragment"), function(response, statusCode) {
-	response.controller(response.vars, response.request, response.path, statusCode);
+    response.controller(response.vars, response.request, response.path, statusCode);
 });
 ```
 
@@ -223,19 +244,19 @@ The response structure, as illustrated with the router pattern `"/{page:product}
 
 ```json
 {
-	"verb": "GET",
-	"status": 200,
-	"path": ["product", "72", "chesterfield"],
-	"vars": {
-		"page": "product",
-		"id": "72",
-		"slug": "chesterfield"
-	},
-	"form": {},
-	"request": {
-		"get": "URLSearchParams",
-		"post": "FormData"
-	}
+    "verb": "GET",
+    "status": 200,
+    "path": ["product", "72", "chesterfield"],
+    "vars": {
+        "page": "product",
+        "id": "72",
+        "slug": "chesterfield"
+    },
+    "form": {},
+    "request": {
+        "get": "URLSearchParams",
+        "post": "FormData"
+    }
 }
 ```
 - **verb:** The HTTP method (GET or POST).
