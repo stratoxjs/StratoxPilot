@@ -62,7 +62,7 @@ router.get('[STATUS_ERROR]', function(vars, request, path, statusCode) {
 });
 
 dispatcher.dispatcher(router, dispatcher.serverParams("fragment"), function(response, statusCode) {
-    // response.controller is equal to what the routers second arguments being fed with.
+    // response.controller is equal to what the routers second argument is being fed with.
     // You can add Ajax here if you wish to trigger a ajax call.
     response.controller(response.vars, response.request, response.path, statusCode);
 });
