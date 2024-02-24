@@ -31,6 +31,8 @@
     "router",
     "modern",
     "routing",
+    "router",
+    "dispatcher",
     "state handler"
   ],
   "author": "Daniel Ronkainen",
