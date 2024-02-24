@@ -1,4 +1,3 @@
-
 # Stratox Pilot
 Startox Pilot is a JavaScript router designed for ease of use and flexibility. It employs regular expressions to offer dynamic routing, allowing for both straightforward and complex navigation paths. As a universal library, it works across different platforms without needing any external dependencies. This independence makes Startox Pilot a practical option for developers in search of a dependable routing tool that combines advanced features and modular design in a compact package.
 
@@ -191,15 +190,15 @@ The dispatcher is essential for identifying and providing the appropriate route 
 dispatcher.dispatcher(Router routerCollection, serverParams, callable dispatch);
 ```
 
-### Arguments
-- **routerCollection (Router):** Requires an instance of Router, supplying the dispatcher with a collection of routes for validation.
-- **serverParams:** Represents the current dynamic URI path for the dispatcher's use.
-- **dispatch (callable):** A callable function expected to process and return the match result.
+#### Arguments
+* **[routerCollection](#router-collection-routercollection)** 
+* **[serverParams](#server-params-serverparams)** 
+* **[dispatch](#dispatch-function-dispatch)**
 
-### Router Collection
+### Router Collection (routerCollection)
 This expects a Router instance, allowing for customization. You can create your router collection extending the Router class, potentially adding more HTTP methods, structure, or functionality.
 
-### Server Params
+### Server Params (serverParams)
 Server params indicate the URL segment the dispatcher should utilize. These params dynamically target the specified URI segment. Several built-in options include:
 
 #### URI Fragment
@@ -220,7 +219,7 @@ Ideal for non-browser environments, supporting backend applications, APIs, or sh
 dispatcher.request("path");
 ```
 
-### Dispatch Function
+### Dispatch Function (dispatch)
 The "dispatch" argument expects a callable function to process the match result, handling both successful (status code 200) and error outcomes (status code 404 for "page not found" and 405 for "Method not allowed"). The function receives two parameters: response (object) and statusCode (int).
 
 #### Response Details
