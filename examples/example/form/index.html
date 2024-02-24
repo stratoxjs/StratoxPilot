@@ -1,0 +1,32 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+	<meta charset="UTF-8">
+	<meta name="viewport" content="width=device-width, initial-scale=1.0">
+	<title>Stratox Pilot</title>
+</head>
+<body>
+	<div id="app">
+		<h1>Basic post form example</h1>
+		<p>Fill in the form and click on the submit button.</p>
+		<article style="margin-bottom: 20px;">
+			<form action="#post/contact" method="post">
+				<div>
+					<label>First name</label>
+					<input type="text" name="firstname" value="">
+				</div>
+				<div>
+					<label>Last name</label>
+					<input type="text" name="lastname" value="">
+				</div>
+				<div>
+					<input type="submit" name="submit" value="Submit">
+				</div>
+			</form>
+		</article>
+
+		<div id="content" style="padding:20px; background: #F1F1F1;"></div>
+	</div>
+	<script type="module" src="./main.js"></script>
+</body>
+</html>

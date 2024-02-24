@@ -1,5 +1,6 @@
 {
   "name": "@stratox/pilot",
+  "type": "module",
   "version": "1.0.3",
   "description": "Stratox Pilot is a JavaScript Router Library that enables precise navigation within web applications through the use of regular expressions for route definition.",
   "main": "src/index.js",
@@ -7,7 +8,7 @@
     "src": "src"
   },
   "scripts": {
-    "start": "node index.js",
+    "start": "node ./examples/index.js",
     "test": "jasmine",
     "lint": "eslint . --ext .js --fix --ignore-path .gitignore"
   },
