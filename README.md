@@ -62,7 +62,7 @@ router.get('[STATUS_ERROR]', function(vars, request, path, statusCode) {
 });
 
 dispatcher.dispatcher(router, dispatcher.serverParams("fragment"), function(response, statusCode) {
-    // response.controller is equal to what the routers second argumentis being fed with.
+    // response.controller is equal to what the routers second argument is being fed with.
     // You can add Ajax here if you wish to trigger a ajax call.
     response.controller(response.vars, response.request, response.path, statusCode);
 });
@@ -88,14 +88,14 @@ const dispatcher = new Dispatcher({
 - **fragmentPrefix (string):** This option lets you prepend a prefix to fragment or hash navigation calls. For instance, adding the "!" character means the URL's hash will be expected to appear as "#!your-hash", modifying the default behavior to accommodate specific routing schemes or to enhance compatibility with certain browsers or frameworks.
 
 ## Defining routes
-In Stratox Pilot, there are two primary router types: `get` and `post`. Both types follow the same structural format, as illustrated below, with the key difference being that they will expect different request (se navigation for more information)
+In Stratox Pilot, there are two primary router types: `get` and `post`. Both types follow the same structural format, as illustrated below, with the key difference being that they will expect different request (see navigation for more information)
 ```
 router.get(string pattern, mixed call);
 router.post(string pattern, mixed call);
 ```
 #### Arguments
 * **pattern (string):** This parameter expects a URI path in the form of a string, which may include regular expressions for more complex matching criteria.
-* **call (mixed):** This parameter can accept any data type, such as a callable, anonymous function, string, number, or boolean. However, it is most common to use a function. For the purposes of this guide, I am use a regular callable function in my examples.
+* **call (mixed):** This parameter can accept any data type, such as a callable, anonymous function, string, number, or boolean. However, it is most common to use a function. For the purposes of this guide, I use a regular callable function in my examples.
 
 ### A really Basic example
 ```javascript
