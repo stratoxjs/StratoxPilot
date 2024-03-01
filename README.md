@@ -21,8 +21,7 @@ npm install @stratox/pilot
 ##  A basic example
 Below is a simple yet comprehensive example. Each component will be explored in further detail later in this guide.
 ```javascript
-import { Router } from "Router";
-import { Dispatcher } from "Dispatcher";
+import { Router, Dispatcher } from '@stratox/pilot';
 
 const router = new Router();
 const dispatcher = new Dispatcher();
