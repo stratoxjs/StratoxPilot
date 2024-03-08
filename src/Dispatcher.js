@@ -149,6 +149,20 @@ export class Dispatcher {
     }
 
     /**
+     * Get router data
+     * @param  {object} routeCollection
+     * @return {object}
+     */
+    getRouterData(routeCollection) {
+        const router = (typeof routeCollection?.getRouters === "function") ? routeCollection.getRouters() : routeCollection;
+        if(typeof router !== "object") {
+            throw new Error(`The first function argumnets (routeCollection) is expected 
+                to be an instance of Startox Router class or in a right object structure.`);
+        }
+        return router;
+    }
+
+    /**
      * Validate dispatch
      * @param  {string} method  Verb (GET, POST)
      * @param  {uri} dipatch    The uri/hash to validate
@@ -156,12 +170,8 @@ export class Dispatcher {
      */
     validateDispatch(routeCollection, method, dipatch) {
 
-        if(!(routeCollection instanceof Router)) {
-            throw new Error("The first function argumnets is expected to be an instance of Startox Router class.");
-        }
-
         const inst = this;
-        const router = routeCollection.getRouters();
+        const router = this.getRouterData(routeCollection);
         const uri = dipatch.split("/");
         let current = {}, parts, regexItems, vars = {}, path = Array(), hasError, 
         statusError = 404, foundResult = false;
