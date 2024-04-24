@@ -249,7 +249,7 @@ The response structure, as illustrated with the router pattern `"/{page:product}
     "form": {},
     "request": {
         "get": "URLSearchParams",
-        "post": "FormData"
+        "post": {}
     }
 }
 ```
@@ -259,7 +259,7 @@ The response structure, as illustrated with the router pattern `"/{page:product}
 - **vars:** An object mapping path segments to keys.
 - **form:** Captures submitted DOM form elements.
 - **request.get:** An instance of URLSearchParams for GET requests.
-- **request.post:** An instance of FormData for POST requests.
+- **request.post:** An object with expected postdata
 
 ## Navigation
 
@@ -295,10 +295,10 @@ router.get('/articles/{id:[0-9]+}/{slug:[^/]+}', function(vars, request, path) {
 
 ### POST Request
 
-Creating a POST request is similarly efficient, targeting a `post` router. The request parameter will be converted into an instance of FormData to facilitate the request.
+Creating a POST request is similarly efficient, targeting a `post` router. The request parameter will be a object.
 #### Arguments
 - **path (string):** Defines the URI, which can be a **regular path** or a **hash**.
-- **request (object):** Submits a POST request to the dispatcher. This will be processed into an instance of [FormData](https://developer.mozilla.org/en-US/docs/Web/API/FormData), allowing for detailed and structured data transmission.
+- **request (object):** Submits a POST request to the dispatcher. This will be an regular object.
 
 #### Make post request
 ```javascript

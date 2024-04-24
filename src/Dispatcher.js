@@ -66,7 +66,9 @@ export class Dispatcher {
         const data = this.buildGetPath(path, requestGet);
         
         if(!(requestPost instanceof FormData)) {
-            formData = this.objToFormData(requestPost);
+            //formData = this.objToFormData(requestPost);
+            // Clonable bug in webkit
+            formData = requestPost;
         }
 
         this.pushState(data.path, {
@@ -334,7 +336,7 @@ export class Dispatcher {
                 const url = new URL(inst.#form.action);
 
                 if(method.toUpperCase() === "POST") {
-                    inst.mapTo("POST", url, inst.#paramsToObj(url.search), formData);
+                    inst.mapTo("POST", url, inst.#paramsToObj(url.search), Object.fromEntries(formData));
                 } else {
                     const assignObj = Object.assign(inst.#paramsToObj(url.search), inst.#paramsToObj(formData));
                     inst.navigateTo(url, assignObj);
