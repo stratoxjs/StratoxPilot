@@ -37,11 +37,11 @@ dispatcher.dispatcher(router, dispatcher.request("path"), function(data, status)
 
             if(data.verb === "POST") {
                 it("Validating POST request", function() {
-                    expect(data.request.post instanceof FormData).toBe(true);
+                    expect(typeof data.request.post === "object").toBe(true);
                 });
 
                 it("POST request param", function() {
-                    expect(data.request.post.get("param")).toBe('10');
+                    expect(data.request.post.param).toBe(10);
                 });
 
             } else {
