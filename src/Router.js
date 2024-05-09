@@ -27,7 +27,7 @@ export class Router {
      * @param  {mixed} controller   Whatever you want the router to execute
      * @return {void}
      */
-    map(verb, pattern, controller) {
+    map(verb, pattern, controller, config) {
         if(typeof verb === "string") {
             verb = Array(verb);
         }
@@ -44,7 +44,8 @@ export class Router {
         this.#router.push({
             verb: Router.validateVerb(verb),
             pattern: pattern,
-            controller: controller
+            controller: controller,
+            config: (config ?? {})
         });
         this.#protocol[verb] = {[pattern]: controller}
     }
@@ -55,8 +56,8 @@ export class Router {
      * @param  {mixed} controller   Whatever you want the router to execute
      * @return {void}
      */
-    get(pattern, controller) {
-        this.map("GET", pattern, controller);
+    get(pattern, controller, config) {
+        this.map("GET", pattern, controller, config);
     }
 
     /**
@@ -65,8 +66,8 @@ export class Router {
      * @param  {mixed} controller   Whatever you want the router to execute
      * @return {void}
      */
-    post(pattern, controller) {
-        this.map("POST", pattern, controller);
+    post(pattern, controller, config) {
+        this.map("POST", pattern, controller, config);
     }
 
     /**

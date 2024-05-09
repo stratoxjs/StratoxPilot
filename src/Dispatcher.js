@@ -232,6 +232,7 @@ export class Dispatcher {
             verb: method,
             status: statusCode,
             controller: (statusErrContr) ? statusErrContr: (current?.controller ?? null),
+            config: (statusErrContr) ? statusErrContr: (current?.config ?? null),
             path: filterPath,
             vars: vars,
             request: {
