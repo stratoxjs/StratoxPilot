@@ -309,8 +309,8 @@ The above post will trigger the result for the matching router:
 ```javascript
 // POST: example.se/#post/contact
 router.post('/post/contact', function(vars, request, path) {
-    const firstname = request.post.get("firstname");
-    const lastname = request.post.get("lastname");
+    const firstname = request.post.firstname;
+    const lastname = request.post.lastname;
     console.log(`The post request, first name: ${firstname}, last name: ${lastname}`);
 });
 ```
