@@ -32,7 +32,7 @@ router.get('/', function() {
 });
 
 // GET: example.se/#about 
-// REGULAR URI paths (example.se/about) is of course also supported!
+// REGULAR URI paths (example.se/about) are of course also supported!
 router.get('/about', function(vars, request, path) {
     const page = vars[0].pop();
     console.log(`The current page is: ${page}`);
@@ -272,7 +272,7 @@ Initiating a GET request or navigating to a new page is straightforward. Such ac
 - **path (string):** Specifies the URI, which can be a **regular path** or a **hash**.
 - **request (object):** Sends a GET request or query string to the dispatcher. This will be transformed into an instance of [URLSearchParams](https://developer.mozilla.org/en-US/docs/Web/API/URLSearchParams). When executed in a browser, the query string will also be appended to the URL in the address field.
 
-#### Make get request
+#### Make GET request
 ```javascript
 // URI hash (fragment with hashtag) navigation
 dispatcher.navigateTo("#articles/824/hello-world", { test: "A get request" });
@@ -300,11 +300,11 @@ Creating a POST request is similarly efficient, targeting a `post` router. The r
 - **path (string):** Defines the URI, which can be a **regular path** or a **hash**.
 - **request (object):** Submits a POST request to the dispatcher. This will be an regular object.
 
-#### Make post request
+#### Make POST request
 ```javascript
 dispatcher.postTo("#post/contact", { firstname: "John", lastname: "Doe" });
 ```
-#### The post request result
+#### The POST request result
 The above post will trigger the result for the matching router:
 ```javascript
 // POST: example.se/#post/contact
