@@ -347,6 +347,25 @@ export class Dispatcher {
     }
 
     /**
+     * Get closet form element
+     * @param  {object} event
+     * @return {object}
+     */
+    getFormData(event) {
+        let formEl = event.target;
+
+        if (!(formEl instanceof HTMLFormElement)) {
+            formEl = event.target.closest('form');
+        }
+
+        if(!formEl) {
+            throw new Error("The Dispatcher getFormData method was unable to locate a valid closest form element from the provided event.");
+        }
+
+        return Object.fromEntries(new FormData(formEl));
+    }
+
+    /**
      * Build and return patterns
      * @param  {string} matchStr
      * @return {array}
