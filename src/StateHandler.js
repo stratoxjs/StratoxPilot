@@ -3,7 +3,7 @@
  * Author: Daniel Ronkainen
  * Apache License Version 2.0
  */
-export class StateHandler {
+export default class StateHandler {
   #state = {};
 
   #config = {};
@@ -22,11 +22,11 @@ export class StateHandler {
   }
 
   /**
-     * Start event
-     * @param  {string} eventName
-     * @param  {callable} handler
-     * @return {void}
-     */
+   * Start event
+   * @param  {string} eventName
+   * @param  {callable} handler
+   * @return {void}
+   */
   on(eventName, handler) {
     if (!this.#handlers[eventName]) this.#handlers[eventName] = [];
     const hand = this.#eventHandler(eventName, handler.bind(this));
@@ -34,10 +34,10 @@ export class StateHandler {
   }
 
   /**
-     * Un bind / remove event
-     * @param  {string} eventName
-     * @return {bool}
-     */
+   * Un bind / remove event
+   * @param  {string} eventName
+   * @return {bool}
+   */
   off(eventName) {
     if (typeof this.#unbind[eventName] === 'function') {
       this.#unbind[eventName]();
@@ -47,34 +47,35 @@ export class StateHandler {
   }
 
   /**
-     * Emit handler event
-     * @param  {string} eventName
-     * @param  {mixed} data       Data to pass to event
-     * @return {void}
-     */
+   * Emit handler event
+   * @param  {string} eventName
+   * @param  {mixed} data       Data to pass to event
+   * @return {void}
+   */
   emit(eventName, data) {
     if (typeof this.#handlers[eventName] !== 'object') {
-      throw new Error(`Trying to emit to an event (${eventName}) does not yet exists. If you are trying to navigate the page then this should be done after the the dispatcher.`);
+      throw new Error(`Trying to emit to an event (${eventName}) that does not yet exist. If you are trying to navigate the page, then this should be done after the dispatcher.`);
     }
-    for (const handler of this.#handlers[eventName]) {
+
+    this.#handlers[eventName].forEach((handler) => {
       handler(data);
-    }
+    });
   }
 
   /**
-     * Will only emit sate and avoid to browse communication
-     * @return {void}
-     */
+   * Will only emit sate and avoid to browse communication
+   * @return {void}
+   */
   emitPopState() {
     this.emit('popstate', {});
   }
 
   /**
-     * Push to event state
-     * @param  {string} path
-     * @param  {object} state
-     * @return {void}
-     */
+   * Push to event state
+   * @param  {string} path
+   * @param  {object} state
+   * @return {void}
+   */
   pushState(path, state = {}) {
     if (typeof path !== 'string') {
       throw new Error('Argument 1 (path) in pushState method has to be a string');
@@ -83,9 +84,9 @@ export class StateHandler {
       throw new Error('Argument 2 (state) in pushState method has to be a object');
     }
 
-    this.#currentState = function () {
-      if (this.#config.module && typeof history === 'object') {
-        history.pushState(state, '', path);
+    this.#currentState = () => {
+      if (this.#config.module && typeof window.history === 'object') {
+        window.history.pushState(state, '', path);
       }
       this.emit('popstate', { state });
     };
@@ -94,10 +95,10 @@ export class StateHandler {
   }
 
   /**
-     * Refresh the current state
-     * @param  {object} state
-     * @return {void}
-     */
+   * Refresh the current state
+   * @param  {object} state
+   * @return {void}
+   */
   refreshState(state = {}) {
     if (typeof state !== 'object') {
       throw new Error('Argument 1 (state) in pushState method has to be a object');
@@ -110,10 +111,10 @@ export class StateHandler {
   }
 
   /**
-     * Get state
-     * @param  {object} state
-     * @return {object}
-     */
+   * Get state
+   * @param  {object} state
+   * @return {object}
+   */
   getState(state) {
     if (typeof this.#state === 'function' || this.#state === 'object') {
       return this.#state(state);
@@ -122,27 +123,28 @@ export class StateHandler {
   }
 
   /**
-     * Get and merge states
-     * @param  {object} state
-     * @return {object}
-     */
+   * Get and merge states
+   * @param  {object} state
+   * @return {object}
+   */
   #states(state) {
     return { ...this.getState(state), ...state };
   }
 
   /**
-     * Create event
-     * @param  {string}   eventName
-     * @param  {callable} cb
-     * @return {callable}
-     */
+   * Create event
+   * @param  {string}   eventName
+   * @param  {callable} cb
+   * @return {callable}
+   */
   #eventHandler(eventName, cb) {
-    const inst = this; const
-      handler = function (event) {
-        if (typeof event !== 'object') event = {};
-        event.details = inst.#states((event.state ?? {}));
-        return cb(event);
-      };
+    const inst = this;
+    const handler = (eventArg) => {
+      let event = eventArg;
+      if (typeof event !== 'object') event = {};
+      event.details = inst.#states((event.state ?? {}));
+      return cb(event);
+    };
 
     if (this.#config.module && typeof window === 'object') {
       window.addEventListener(eventName, handler);

@@ -3,15 +3,12 @@
  * Author: Daniel Ronkainen
  * Apache License Version 2.0
  */
-export class Router {
+export default class Router {
   static #validVerb = ['GET', 'POST', 'PUT', 'DELETE']; // Allowed verbs
 
-  #router = Array();
+  #router = [];
 
   #protocol = {};
-
-  constructor() {
-  }
 
   /**
      * Return the router data
@@ -23,12 +20,13 @@ export class Router {
 
   /**
      * Add router
-     * @param  {string} verb        GET, POST
+     * @param  {string} verbArg     GET, POST
      * @param  {string} pattern     Preg match pattern
      * @param  {mixed} controller   Whatever you want the router to execute
      * @return {void}
      */
-  map(verb, pattern, controller, config) {
+  map(verbArg, pattern, controller, config) {
+    let verb = verbArg;
     if (typeof verb === 'string') {
       verb = Array(verb);
     }
@@ -130,10 +128,11 @@ export class Router {
 
   /**
      * Returned valid verb
-     * @param  {array} verb Collection of valid methods, else a error will be thrown
+     * @param  {array} verbArg Collection of valid methods, else a error will be thrown
      * @return {array}
      */
-  static validateVerb(verb) {
+  static validateVerb(verbArg) {
+    const verb = verbArg;
     const inst = this;
     for (let i = 0; i < verb.length; i++) {
       verb[i] = verb[i].toUpperCase();

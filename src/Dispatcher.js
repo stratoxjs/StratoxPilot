@@ -1,12 +1,12 @@
-import { StateHandler } from './StateHandler.js';
-import { Router } from './Router.js';
+import StateHandler from './StateHandler';
+import Router from './Router';
 
 /**
  * Stratox Dispatcher
  * Author: Daniel Ronkainen
  * Apache License Version 2.0
  */
-export class Dispatcher {
+export default class Dispatcher {
   #handler;
 
   #state = {};
@@ -39,52 +39,52 @@ export class Dispatcher {
   }
 
   /**
-     * Navigate to a new page
-     * @param  {string} path    A uri path or anchor with path e.g. #page1/page2/page3
-     * @param  {Object} request GET request
-     * @return {void}
-     */
+   * Navigate to a new page
+   * @param  {string} path    A uri path or anchor with path e.g. #page1/page2/page3
+   * @param  {Object} request GET request
+   * @return {void}
+   */
   navigateTo(path, request = {}) {
     return this.mapTo('GET', path, request);
   }
 
   /**
-     * Push post state
-     * @param  {string} path     URI path or hash
-     * @param  {Object} request  Add post form data
-     * @return {Object} Instance of formData
-     */
+   * Push post state
+   * @param  {string} path     URI path or hash
+   * @param  {Object} request  Add post form data
+   * @return {Object} Instance of formData
+   */
   postTo(path, request = {}) {
     return this.mapTo('POST', path, false, request);
   }
 
   /**
-     * Push put state
-     * @param  {string} path     URI path or hash
-     * @param  {Object} request  Add post form data
-     * @return {Object} Instance of formData
-     */
+   * Push put state
+   * @param  {string} path     URI path or hash
+   * @param  {Object} request  Add post form data
+   * @return {Object} Instance of formData
+   */
   putTo(path, request = {}) {
     return this.mapTo('PUT', path, false, request);
   }
 
   /**
-     * Push delete state
-     * @param  {string} path    A uri path or anchor with path e.g. #page1/page2/page3
-     * @param  {Object} request GET request
-     * @return {void}
-     */
+   * Push delete state
+   * @param  {string} path    A uri path or anchor with path e.g. #page1/page2/page3
+   * @param  {Object} request GET request
+   * @return {void}
+   */
   deleteTo(path, request = {}) {
     return this.mapTo('DELETE', path, request);
   }
 
   /**
-     * Push post state
-     * @param  {string} verb     GET, POST, PUT, DELETE
-     * @param  {string} path     URI path or hash
-     * @param  {Object} request  Add post form data
-     * @return {Object} Instance of formData
-     */
+   * Push post state
+   * @param  {string} verb     GET, POST, PUT, DELETE
+   * @param  {string} path     URI path or hash
+   * @param  {Object} request  Add post form data
+   * @return {Object} Instance of formData
+   */
   mapTo(verb, path, requestGet = {}, requestPost = {}) {
     let formData = requestPost;
     const data = this.buildGetPath(path, requestGet);
@@ -107,45 +107,41 @@ export class Dispatcher {
   }
 
   /**
-     * Get serverParams as dynamic variable
-     * @param  {string} key Get param, if not specified then get all
-     * @param  {object} obj Add object that you want to merge current param with (KEY is required)
-     * @return {callable|object}
-     */
+   * Get serverParams as dynamic variable
+   * @param  {string} key Get param, if not specified then get all
+   * @param  {object} obj Add object that you want to merge current param with (KEY is required)
+   * @return {callable|object}
+   */
   serverParams(key, obj) {
     if (typeof key === 'string') {
       const inst = this;
-      return function () {
-        return Object.assign(inst.#handler.getState().server[key], obj);
-      };
+      return () => Object.assign(inst.#handler.getState().server[key], obj);
     }
     return this.#handler.getState().server;
   }
 
   /**
-     * Get request as dynamic variable
-     * @param  {string} key Get param, if not specified then get all
-     * @param  {object} obj Add object that you want to merge current param with (KEY is required)
-     * @return {callable|object}
-     */
+   * Get request as dynamic variable
+   * @param  {string} key Get param, if not specified then get all
+   * @param  {object} obj Add object that you want to merge current param with (KEY is required)
+   * @return {callable|object}
+   */
   request(key, obj) {
     if (typeof key === 'string') {
       const inst = this;
-      return function () {
-        return Object.assign((inst.#state.request?.[key] ?? '/'), obj);
-      };
+      return () => Object.assign((inst.#state.request?.[key] ?? '/'), obj);
     }
     return this.#state.request;
   }
 
   /**
-     * Push state
-     * @param  {string} path  URI
-     * @param  {Object} state {method: GET|POST, request: {...More data} }
-     * @return {void}
-     */
-  pushState(path, state = {}) {
-    state = this.#assignRequest(state);
+   * Push state
+   * @param  {string} path  URI
+   * @param  {Object} stateArg {method: GET|POST, request: {...More data} }
+   * @return {void}
+   */
+  pushState(path, stateArg = {}) {
+    const state = this.#assignRequest(stateArg);
     state.method = state.method.toUpperCase();
     if (!Router.isValidVerb(state.method)) {
       throw new Error(`The verb (http method) "${state.method}" is not allowed. Supported verbs: ${Router.getValidVerbs().join(', ')}`);
@@ -154,15 +150,16 @@ export class Dispatcher {
   }
 
   /**
-     * Init the Dispatcher
-     * @param  {Function} fn callback
-     * @return {void}
-     */
+   * Init the Dispatcher
+   * @param  {Function} fn callback
+   * @return {void}
+   */
   dispatcher(routeCollection, path, fn) {
     const inst = this;
     // if(routeCollection.hasPostRoutes())
     this.#catchFormEvents();
-    this.#handler.on('popstate', (event) => {
+    this.#handler.on('popstate', (eventArg) => {
+      const event = eventArg;
       event.details.request.get = inst.buildQueryObj(event.details.request.get);
       inst.#state = inst.#assignRequest(event.details);
       const uriPath = inst.baseDir(inst.#getDynUri(path).toString());
@@ -175,10 +172,10 @@ export class Dispatcher {
   }
 
   /**
-     * Get router data
-     * @param  {object} routeCollection
-     * @return {object}
-     */
+   * Get router data
+   * @param  {object} routeCollection
+   * @return {object}
+   */
   getRouterData(routeCollection) {
     const router = (typeof routeCollection?.getRouters === 'function') ? routeCollection.getRouters() : routeCollection;
     if (typeof router !== 'object') {
@@ -189,22 +186,28 @@ export class Dispatcher {
   }
 
   /**
-     * Validate dispatch
-     * @param  {string} method  Verb (GET, POST)
-     * @param  {uri} dipatch    The uri/hash to validate
-     * @return {object|false}
-     */
+   * Validate dispatch
+   * @param  {string} method  Verb (GET, POST)
+   * @param  {uri} dipatch    The uri/hash to validate
+   * @return {object|false}
+   */
   validateDispatch(routeCollection, method, dipatch) {
     const inst = this;
     const router = this.getRouterData(routeCollection);
     const uri = dipatch.split('/');
-    let current = {}; let parts; let regexItems; let vars = {}; let path = Array(); let hasError;
-    let statusError = 404; const
-      foundResult = false;
+    // const foundResult = false;
+    let current = {};
+    let parts;
+    let regexItems;
+    let vars = {};
+    let path = [];
+    let hasError;
+    let statusError = 404;
+
     for (let i = 0; i < router.length; i++) {
-      regexItems = Array();
+      regexItems = [];
       vars = {};
-      path = Array();
+      path = [];
       hasError = false;
       parts = uri;
 
@@ -218,8 +221,8 @@ export class Dispatcher {
           const value = (hasRegex) ? regex[2] : routerData[x];
           regexItems.push(value);
 
-          let part;
-          if (part = inst.#validateParts(parts, value)) {
+          const part = inst.#validateParts(parts, value);
+          if (part) {
             // Escaped
             if (part[0]) {
               const int = (x - 1);
@@ -263,15 +266,15 @@ export class Dispatcher {
   }
 
   /**
-     * This will validate each part
-     * @param  {array} uri      Uri path as array items
-     * @param  {string} value   Pattern value to validate part againts
-     * @return {array|false}    Will return each valid part as array items
-     */
+   * This will validate each part
+   * @param  {array} uri      Uri path as array items
+   * @param  {string} value   Pattern value to validate part againts
+   * @return {array|false}    Will return each valid part as array items
+   */
   #validateParts(uri, value) {
     const inst = this;
-    const uriParts = Array(); let
-      hasError = false;
+    const uriParts = [];
+    let hasError = false;
     for (let x = 0; x < uri.length; x++) {
       uriParts.push(inst.htmlspecialchars(decodeURIComponent(uri[x])));
       const join = uriParts.join('/');
@@ -287,10 +290,10 @@ export class Dispatcher {
   }
 
   /**
-     * Create a state handler instance
-     * @param  {object} serverParams expects an dynamic object that can act as an server parameter
-     * @return {StateHandler}
-     */
+   * Create a state handler instance
+   * @param  {object} serverParams expects an dynamic object that can act as an server parameter
+   * @return {StateHandler}
+   */
   initStateHandler(serverParams) {
     const inst = this;
     return new StateHandler(() => {
@@ -317,10 +320,10 @@ export class Dispatcher {
   }
 
   /**
-     * Get possible dynamic Server parameters
-     * @param  {string} path
-     * @return {object}
-     */
+   * Get possible dynamic Server parameters
+   * @param  {string} path
+   * @return {object}
+   */
   #getDynUri(path) {
     const uriPath = (typeof path === 'function') ? path() : path;
     if (typeof uriPath !== 'string' && typeof uriPath !== 'object') {
@@ -330,22 +333,23 @@ export class Dispatcher {
   }
 
   /**
-     * Object to form data
-     * @param  {object} request
-     * @return {object} Instance of formData.
-     */
+   * Object to form data
+   * NOTE: Will not apply automatically, as it won't work with push states.
+   * @param  {object} request
+   * @return {object} Instance of formData.
+   */
   objToFormData(request) {
     const formData = new FormData();
-    for (const [key, value] of Object.entries(request)) {
+    Object.entries(request).forEach(([key, value]) => {
       formData.append(key, value);
-    }
+    });
     return formData;
   }
 
   /**
-     * This will handle the post method
-     * @return {void}
-     */
+   * This will handle the post method
+   * @return {void}
+   */
   #catchFormEvents() {
     const inst = this;
     if (this.#configs.catchForms && (typeof document === 'object')) {
@@ -358,7 +362,9 @@ export class Dispatcher {
         if (method === 'POST' || method === 'PUT') {
           inst.mapTo(method, url, inst.#paramsToObj(url.search), Object.fromEntries(formData));
         } else {
-          const assignObj = Object.assign(inst.#paramsToObj(url.search), inst.#paramsToObj(formData));
+          const searchObj = inst.#paramsToObj(url.search);
+          const formObj = inst.#paramsToObj(formData);
+          const assignObj = Object.assign(searchObj, formObj);
           inst.navigateTo(url, assignObj);
         }
       });
@@ -366,20 +372,20 @@ export class Dispatcher {
   }
 
   /**
-     * Get HTTP request method from form tag
-     * @param  {object} form
-     * @return {string}
-     */
+   * Get HTTP request method from form tag
+   * @param  {object} form
+   * @return {string}
+   */
   getFormMethod(form) {
     return (this.#form?.dataset?.method) ? form?.dataset?.method
       : (this.#form?.getAttribute('method') ?? (this.#form?.method ?? 'GET'));
   }
 
   /**
-     * Get closet form element
-     * @param  {object} event
-     * @return {object}
-     */
+   * Get closet form element
+   * @param  {object} event
+   * @return {object}
+   */
   getFormData(event) {
     let formEl = event.target;
 
@@ -395,16 +401,17 @@ export class Dispatcher {
   }
 
   /**
-     * Build and return patterns
-     * @param  {string} matchStr
-     * @return {array}
-     */
+   * Build and return patterns
+   * @param  {string} matchStr
+   * @return {array}
+   */
   #getMatchPattern(matchStr) {
     const matchPatter = matchStr.match(/{(.*?)}/g);
     if (matchPatter) {
       const patterns = matchPatter.map((item) => item.slice(1, -1));
       const extractPattern = patterns[0].split(':');
-      const patternValue = this.#unescapeForwardSlash(extractPattern[extractPattern.length - 1].trim());
+      const length = extractPattern.length - 1;
+      const patternValue = this.#unescapeForwardSlash(extractPattern[length].trim());
       const regex = new RegExp(`^${patternValue}$`);
       return [regex, ((extractPattern.length > 1) ? extractPattern[0].trim() : ''), patternValue];
     }
@@ -412,44 +419,44 @@ export class Dispatcher {
   }
 
   /**
-     * Check if is a loosy pattern parameter
-     * @param  {string}  pattern
-     * @return {Boolean}
-     */
+   * Check if is a loosy pattern parameter
+   * @param  {string}  pattern
+   * @return {Boolean}
+   */
   #isLossyParam(pattern) {
     const value = pattern.substring(pattern.length - 2);
     return (value !== '?(' && value !== ')?');
   }
 
   /**
-     * Escape forward slash
-     * @param  {string} pattern
-     * @return {string}
-     */
+   * Escape forward slash
+   * @param  {string} pattern
+   * @return {string}
+   */
   #escapeForwardSlash(pattern) {
     return pattern.replace(/{[^}]+}/g, (match, a) => match.replace(/\//g, '[#SC#]'));
   }
 
   /**
-     * Unescape forward slash
-     * @param  {string} pattern
-     * @return {string}
-     */
+   * Unescape forward slash
+   * @param  {string} pattern
+   * @return {string}
+   */
   #unescapeForwardSlash(pattern) {
     return pattern.replace(/\[#SC#\]/g, '/');
   }
 
   /**
-     * Assign response
-     * @param  {object} response
-     * @return {object}
-     */
+   * Assign response
+   * @param  {object} response
+   * @return {object}
+   */
   #assignResponse(response) {
     return {
       verb: 'GET',
       status: 404,
       controller: null,
-      path: Array(),
+      path: [],
       vars: {},
       form: this.#form,
       request: {
@@ -461,10 +468,10 @@ export class Dispatcher {
   }
 
   /**
-     * Assign request
-     * @param  {object} state
-     * @return {object}
-     */
+   * Assign request
+   * @param  {object} state
+   * @return {object}
+   */
   #assignRequest(state) {
     return {
       method: 'GET',
@@ -478,9 +485,9 @@ export class Dispatcher {
   }
 
   /**
-     * Escape special cahracters
-     * @return {string}
-     */
+   * Escape special cahracters
+   * @return {string}
+   */
   htmlspecialchars(value) {
     const char = this.#specCharMap;
     const keys = Object.keys(char);
@@ -489,9 +496,9 @@ export class Dispatcher {
   }
 
   /**
-     * Decode html special characers
-     * @return {string}
-     */
+   * Decode html special characers
+   * @return {string}
+   */
   htmlspecialchars_decode(value) {
     const char = this.#specCharMap;
     const values = Object.values(char);
@@ -500,44 +507,47 @@ export class Dispatcher {
   }
 
   /**
-     * Start URLSearchParams instance
-     * @param  {object|string} value
-     * @return {URLSearchParams}
-     */
+   * Start URLSearchParams instance
+   * @param  {object|string} value
+   * @return {URLSearchParams}
+   */
   #params(value) {
     return new URLSearchParams(value);
   }
 
   /**
-     * Query string to object
-     * @param  {string|URLSearchParams} value
-     * @return {object}
-     */
-  #paramsToObj(value) {
+   * Query string to object
+   * @param  {string|URLSearchParams} valueArg
+   * @return {object}
+   */
+  #paramsToObj(valueArg) {
+    let value = valueArg;
     if (!(value instanceof URLSearchParams)) {
       value = this.#params(value);
     }
-    return [...value.entries()].reduce((items, [key, val]) => Object.assign(items, { [key]: val }), {});
+    const entries = value.entries();
+    return [...entries].reduce((items, [key, val]) => Object.assign(items, { [key]: val }), {});
   }
 
   /**
-     * Build a query search parama
-     * @param  {object} request
-     * @return {URLSearchParams}
-     */
+   * Build a query search parama
+   * @param  {object} request
+   * @return {URLSearchParams}
+   */
   buildQueryObj(request) {
     return this.#params(Object.assign(this.serverParams('query')(), request));
   }
 
   /**
-     * Build query path, string and fragment
-     * @param  {string} path
-     * @param  {object} request
-     * @return {object}
-     */
-  buildGetPath(path, request) {
-    let pathname = path; let
-      queryStr = '';
+   * Build query path, string and fragment
+   * @param  {string} pathArg
+   * @param  {object} request
+   * @return {object}
+   */
+  buildGetPath(pathArg, request) {
+    let path = pathArg;
+    let pathname = path;
+    let queryStr = '';
     if (typeof request === 'object') {
       const query = this.#params(request);
       queryStr = query.toString();
@@ -561,11 +571,11 @@ export class Dispatcher {
   }
 
   /**
-     * Get base dir from config
-     * @param {string}  path
-     * @param {bool}    add
-     * @return {string}
-     */
+   * Get base dir from config
+   * @param {string}  path
+   * @param {bool}    add
+   * @return {string}
+   */
   baseDir(path, add) {
     let baseDir = path;
     if (this.#configs.root.length > 0) {
@@ -579,20 +589,21 @@ export class Dispatcher {
   }
 
   /**
-     * Add leading slash to string
-     * @param {string} path
-     * @return {string}
-     */
-  addLeadingSlash(path) {
+   * Add leading slash to string
+   * @param {string} pathArg
+   * @return {string}
+   */
+  addLeadingSlash(pathArg) {
+    let path = pathArg;
     if (!path.startsWith('/')) path = `/${path}`;
     return path;
   }
 
   /**
-     * Return query string part if exist
-     * @param  {string} queryStr
-     * @return {string}
-     */
+   * Return query string part if exist
+   * @param  {string} queryStr
+   * @return {string}
+   */
   getQueryStr(queryStr) {
     if (typeof queryStr === 'string' && queryStr.length > 0) {
       return `?${queryStr}`;
