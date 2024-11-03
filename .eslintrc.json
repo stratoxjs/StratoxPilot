@@ -1,7 +1,18 @@
 {
-  "root": true,
+  "extends": ["airbnb-base"], 
+  "env": {
+    "browser": true,
+    "node": true,
+    "es2022": true
+  },
+  "parser": "@babel/eslint-parser",
   "parserOptions": {
-    "sourceType": "module",
-    "ecmaVersion": 13
+    "requireConfigFile": false
+  },
+  "rules": {
+    "no-unused-vars": "off",
+    "class-methods-use-this": "off",
+    "no-console": "off",
+    "no-plusplus": "off"
   }
 }

@@ -16,6 +16,6 @@ app.get('/example/:guideName/*', (req, res) => {
 });
 
 app.listen(port, () => {
-  console.log(`Server running at host: localhost, 127.0.0.1 or your local IP number`);
+  console.log('Server running at host: localhost, 127.0.0.1 or your local IP number');
   console.log(`Server running at port: ${port}`);
 });
