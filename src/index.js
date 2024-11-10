@@ -1,4 +1,4 @@
-import { Router } from "./Router.js";
-import { Dispatcher } from "./Dispatcher.js";
+import Router from './Router';
+import Dispatcher from './Dispatcher';
 
 export { Router, Dispatcher };

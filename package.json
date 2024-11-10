@@ -1,7 +1,7 @@
 {
   "name": "@stratox/pilot",
   "type": "module",
-  "version": "1.1.0",
+  "version": "1.2.0",
   "description": "Stratox Pilot is a JavaScript Router Library that enables precise navigation within web applications through the use of regular expressions for route definition.",
   "main": "src/index.js",
   "directories": {
@@ -10,7 +10,8 @@
   "scripts": {
     "start": "node ./examples/index.js",
     "test": "jasmine",
-    "lint": "eslint . --ext .js --fix --ignore-path .gitignore"
+    "lint": "eslint . --ignore-pattern 'spec/*' --ignore-pattern 'examples/*'",
+    "lint:fix": "eslint --fix . --ignore-pattern 'spec/*' --ignore-pattern 'examples/*'"
   },
   "repository": {
     "type": "git",
@@ -38,7 +39,13 @@
   "author": "Daniel Ronkainen",
   "license": "Apache-2.0",
   "devDependencies": {
-    "eslint": "^8.56.0",
+    "@babel/eslint-parser": "^7.25.9",
+    "eslint": "^8.57.1",
+    "eslint-config-airbnb": "^19.0.4",
+    "eslint-plugin-import": "^2.31.0",
+    "eslint-plugin-jsx-a11y": "^6.10.2",
+    "eslint-plugin-react": "^7.37.2",
+    "eslint-plugin-react-hooks": "^4.6.2",
     "express": "^4.18.2",
     "jasmine": "^5.1.0"
   }
