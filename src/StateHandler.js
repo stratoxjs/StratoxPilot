@@ -104,9 +104,14 @@ export default class StateHandler {
    * Get the active state object
    * @return {object}
    */
-  get() {
+  get(key, defaultVal) {
+    /*
     if (this.#config.module && typeof window.history === 'object') {
       return window.history?.state;
+    }
+    */
+    if(typeof key === "string" || typeof key === "number") {
+      return (StateHandler.#stateObject?.[key]) ? StateHandler.#stateObject[key] : defaultVal;
     }
     return StateHandler.#stateObject;
   }
@@ -136,10 +141,16 @@ export default class StateHandler {
    * @param  {Object} addStates
    * @return {void}
    */
-  update(addStates = {}) {
+  update(addStates = {}, defaultVal, refresh) {
     const state = this.get();
-    Object.assign(state, addStates);
-    this.refresh();
+    if(typeof addStates === "string" || typeof addStates === "number") {
+      state[addStates] = defaultVal;
+    } else {
+      Object.assign(state, addStates);
+    }
+    if(refresh !== false) {
+      this.refresh();
+    }
   }
 
   /**
@@ -147,9 +158,8 @@ export default class StateHandler {
    * @param {Object} addStates
    * @param {Object} defaultStates
    */
-  set(addStates = {}, defaultStates = {}) {
-    Object.assign(addStates, defaultStates);
-    this.update(addStates);
+  set(addStates = {}, defaultVal) {
+    this.update(addStates, defaultVal, false);
   }
 
   /**

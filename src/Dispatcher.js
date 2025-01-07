@@ -44,17 +44,12 @@ export default class Dispatcher {
    * @param  {Object} request GET request
    * @return {void}
    */
-  pushToState(path, request = {}) {
-    return this.mapTo('', path, request);
+  navigateTo(path, request = {}) {
+    return this.mapTo('GET', path, request);
   }
 
-  /**
-   * Navigate to a new page
-   * @param  {string} path    A uri path or anchor with path e.g. #page1/page2/page3
-   * @param  {Object} request GET request
-   * @return {void}
-   */
-  navigateTo(path, request = {}) {
+  // Same as method "navigateTo"
+  pushToState(path, request = {}) {
     return this.mapTo('GET', path, request);
   }
 
