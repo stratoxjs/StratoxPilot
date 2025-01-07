@@ -1,5 +1,5 @@
-import { Router } from '../src/Router.js';
-import { Dispatcher } from '../src/Dispatcher.js';
+import Router from '../src/Router';
+import Dispatcher from '../src/Dispatcher';
 
 const router = new Router();
 const dispatcher = new Dispatcher();

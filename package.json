@@ -9,7 +9,7 @@
   },
   "scripts": {
     "start": "node ./examples/index.js",
-    "test": "jasmine",
+    "test": "node --import=./test.js ./node_modules/jasmine/bin/jasmine.js",
     "lint": "eslint . --ignore-pattern 'spec/*' --ignore-pattern 'examples/*'",
     "lint:fix": "eslint --fix . --ignore-pattern 'spec/*' --ignore-pattern 'examples/*'"
   },

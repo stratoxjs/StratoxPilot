@@ -91,7 +91,7 @@ export default class StateHandler {
 
     this.#currentState = () => {
       StateHandler.#stateObject = stateObj;
-      if (this.#config.module && typeof window.history === 'object') {
+      if (typeof window !== 'undefined' && this.#config.module && typeof window.history === 'object') {
         window.history.pushState(stateObj, titleStr, path);
       }
       this.emit('popstate', { stateObj });
