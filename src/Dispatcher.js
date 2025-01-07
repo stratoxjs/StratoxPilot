@@ -44,6 +44,16 @@ export default class Dispatcher {
    * @param  {Object} request GET request
    * @return {void}
    */
+  pushToState(path, request = {}) {
+    return this.mapTo('', path, request);
+  }
+
+  /**
+   * Navigate to a new page
+   * @param  {string} path    A uri path or anchor with path e.g. #page1/page2/page3
+   * @param  {Object} request GET request
+   * @return {void}
+   */
   navigateTo(path, request = {}) {
     return this.mapTo('GET', path, request);
   }
@@ -169,6 +179,14 @@ export default class Dispatcher {
     });
 
     this.#handler.emitPopState();
+  }
+
+  /**
+   * Get the state handler
+   * @return {StateHandler}
+   */
+  getStateHandler() {
+    return this.#handler;
   }
 
   /**
