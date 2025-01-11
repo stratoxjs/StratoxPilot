@@ -79,22 +79,22 @@ export default class StateHandler {
    * @param  {string} titleArg
    * @return {void}
    */
-  pushState(path, state, titleArg) {
+  pushState(path, stateArg, titleArg) {
     const titleStr = (typeof titleArg === 'string') ? titleArg : '';
-    const stateObj = (state === undefined) ? {} : state;
+    const state = (stateArg === undefined) ? {} : stateArg;
     if (typeof path !== 'string') {
       throw new Error('Argument 1 (path) in pushState method has to be a string');
     }
-    if (typeof stateObj !== 'object') {
+    if (typeof state !== 'object') {
       throw new Error('Argument 2 (state) in pushState method has to be a object');
     }
 
     this.#currentState = () => {
-      StateHandler.#stateObject = stateObj;
+      StateHandler.#stateObject = state;
       if (typeof window !== 'undefined' && this.#config.module && typeof window.history === 'object') {
-        window.history.pushState(stateObj, titleStr, path);
+        window.history.pushState(state, titleStr, path);
       }
-      this.emit('popstate', { stateObj });
+      this.emit('popstate', { state });
     };
 
     this.#currentState();

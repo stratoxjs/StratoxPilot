@@ -321,6 +321,7 @@ export default class Dispatcher {
           hash,
           fragment: `/${fragment}`,
           path: (location.pathname ?? '/'),
+          auto: (location.pathname && location.pathname.length > 1 ? location.pathname : `/${fragment}`),
           query,
           ...inst.#getDynUri(serverParams),
         },
