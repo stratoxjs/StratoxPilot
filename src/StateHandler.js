@@ -163,6 +163,22 @@ export default class StateHandler {
   }
 
   /**
+   * Set default states
+   * @param {Object} addStates
+   */
+  setDefault(defaultArg) {
+    if (typeof defaultArg !== 'object') {
+      throw new Error('The first argument of the Stratox builder "setDefault" must be an object!');
+    }
+    const state = this.get();
+    Object.entries(defaultArg).forEach(([key, row]) => {
+      if (!(key in state)) {
+        state[key] = defaultArg[key];
+      }
+    });
+  }
+
+  /**
    * Get state
    * @param  {object} state
    * @return {object}
