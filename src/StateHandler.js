@@ -14,6 +14,8 @@ export default class StateHandler {
 
   #currentState;
 
+  static #stateObject = {};
+
   constructor(state, config = {}) {
     if (typeof state === 'function' || typeof state === 'object') {
       this.#state = state;
@@ -74,9 +76,12 @@ export default class StateHandler {
    * Push to event state
    * @param  {string} path
    * @param  {object} state
+   * @param  {string} titleArg
    * @return {void}
    */
-  pushState(path, state = {}) {
+  pushState(path, stateArg, titleArg) {
+    const titleStr = (typeof titleArg === 'string') ? titleArg : '';
+    const state = (stateArg === undefined) ? {} : stateArg;
     if (typeof path !== 'string') {
       throw new Error('Argument 1 (path) in pushState method has to be a string');
     }
@@ -85,8 +90,9 @@ export default class StateHandler {
     }
 
     this.#currentState = () => {
-      if (this.#config.module && typeof window.history === 'object') {
-        window.history.pushState(state, '', path);
+      StateHandler.#stateObject = state;
+      if (typeof window !== 'undefined' && this.#config.module && typeof window.history === 'object') {
+        window.history.pushState(state, titleStr, path);
       }
       this.emit('popstate', { state });
     };
@@ -95,11 +101,27 @@ export default class StateHandler {
   }
 
   /**
+   * Get the active state object
+   * @return {object}
+   */
+  get(key, defaultVal) {
+    /*
+    if (this.#config.module && typeof window.history === 'object') {
+      return window.history?.state;
+    }
+    */
+    if(typeof key === "string" || typeof key === "number") {
+      return (StateHandler.#stateObject?.[key]) ? StateHandler.#stateObject[key] : defaultVal;
+    }
+    return StateHandler.#stateObject;
+  }
+
+  /**
    * Refresh the current state
    * @param  {object} state
    * @return {void}
    */
-  refreshState(state = {}) {
+  refresh(state = {}) {
     if (typeof state !== 'object') {
       throw new Error('Argument 1 (state) in pushState method has to be a object');
     }
@@ -108,6 +130,52 @@ export default class StateHandler {
     } else {
       this.emit('popstate', { state });
     }
+  }
+
+  refreshState(state = {}) {
+    this.refresh(state);
+  }
+
+  /**
+   * Update the state
+   * @param  {Object} addStates
+   * @return {void}
+   */
+  update(addStates = {}, defaultVal, refresh) {
+    const state = this.get();
+    if(typeof addStates === "string" || typeof addStates === "number") {
+      state[addStates] = defaultVal;
+    } else {
+      Object.assign(state, addStates);
+    }
+    if(refresh !== false) {
+      this.refresh();
+    }
+  }
+
+  /**
+   * Set state
+   * @param {Object} addStates
+   * @param {Object} defaultStates
+   */
+  set(addStates = {}, defaultVal) {
+    this.update(addStates, defaultVal, false);
+  }
+
+  /**
+   * Set default states
+   * @param {Object} addStates
+   */
+  setDefault(defaultArg) {
+    if (typeof defaultArg !== 'object') {
+      throw new Error('The first argument of the Stratox builder "setDefault" must be an object!');
+    }
+    const state = this.get();
+    Object.entries(defaultArg).forEach(([key, row]) => {
+      if (!(key in state)) {
+        state[key] = defaultArg[key];
+      }
+    });
   }
 
   /**

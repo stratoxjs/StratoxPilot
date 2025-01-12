@@ -48,6 +48,11 @@ export default class Dispatcher {
     return this.mapTo('GET', path, request);
   }
 
+  // Same as method "navigateTo"
+  pushToState(path, request = {}) {
+    return this.mapTo('GET', path, request);
+  }
+
   /**
    * Push post state
    * @param  {string} path     URI path or hash
@@ -169,6 +174,14 @@ export default class Dispatcher {
     });
 
     this.#handler.emitPopState();
+  }
+
+  /**
+   * Get the state handler
+   * @return {StateHandler}
+   */
+  getStateHandler() {
+    return this.#handler;
   }
 
   /**
@@ -308,6 +321,7 @@ export default class Dispatcher {
           hash,
           fragment: `/${fragment}`,
           path: (location.pathname ?? '/'),
+          auto: (location.pathname && location.pathname.length > 1 ? location.pathname : `/${fragment}`),
           query,
           ...inst.#getDynUri(serverParams),
         },
