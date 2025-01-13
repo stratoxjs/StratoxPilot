@@ -209,7 +209,8 @@ export default class Dispatcher {
     const router = this.getRouterData(routeCollection);
     const uri = dipatch.split('/');
     // const foundResult = false;
-    let current = {};
+    let current;
+    let fallback;
     let parts;
     let regexItems;
     let vars = {};
@@ -252,12 +253,22 @@ export default class Dispatcher {
         }
 
         if (!hasError) {
-          current = router[i];
-          break;
+          if(!fallback) {
+            // Potential fallback result passed to dispatcher
+            fallback = router[i];
+          }
+          if(uri.length === path.length) {
+            current = router[i];
+            break;
+          }
         }
       } else if (method !== 'GET') {
         statusError = 405;
       }
+    }
+
+    if(typeof current !== "object") {
+      current = (typeof fallback === "object") ? fallback : {};
     }
 
     const statusCode = (!hasError && (uri.length === path.length) ? 200 : statusError);
