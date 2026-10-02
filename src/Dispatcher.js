@@ -647,13 +647,28 @@ export default class Dispatcher {
   baseDir(path, add) {
     let baseDir = path;
     if (this.#configs.root.length > 0) {
-      baseDir = path.replace(this.#configs.root, '');
+      baseDir = this.#removeRoot(path);
       if (add === true) {
         baseDir = this.#configs.root + baseDir;
       }
       baseDir = this.addLeadingSlash(baseDir);
     }
     return baseDir;
+  }
+
+  /**
+   * Remove the root from the start of a path. Only a whole leading part is removed:
+   * with root "/app", "/app/page" becomes "/page", but "/apple" and "/shop/app" stay as they are (audit F18).
+   * @param  {string} path
+   * @return {string}
+   */
+  #removeRoot(path) {
+    const { root } = this.#configs;
+    const rootWithSlash = root.endsWith('/') ? root : `${root}/`;
+    if (path === root || path.startsWith(rootWithSlash)) {
+      return path.slice(root.length);
+    }
+    return path;
   }
 
   /**
