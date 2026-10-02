@@ -227,7 +227,7 @@ describe('path helpers', () => {
     { path: '#!about', request: undefined, result: '#!about' },
     { path: '#about', request: { a: 1 }, result: '/?a=1#!about' },
     { path: '/about', request: undefined, result: '/about' },
-  ])('buildGetPath($path) with fragmentPrefix "!" gives $result (audit pilot F27, fixed)', ({ path, request, result }) => {
+  ])('buildGetPath($path) with fragmentPrefix "!" gives $result (audit pilot F27)', ({ path, request, result }) => {
     expect(new Dispatcher({ fragmentPrefix: '!' }).buildGetPath(path, request).path).toBe(result);
   });
 
