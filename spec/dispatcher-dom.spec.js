@@ -81,13 +81,17 @@ describe('root', () => {
 });
 
 describe('form helpers', () => {
-  // getFormMethod reads the form that the dispatcher last caught (this.#form), not its argument.
-  test('getFormMethod ignores its argument and returns GET when no form was caught (audit pilot F19)', () => {
-    document.body.innerHTML = '<form method="post"></form><form method="post" data-method="put"></form>';
+  test('getFormMethod reads the method of the form it is given (audit pilot F19, fixed)', () => {
+    document.body.innerHTML = '<form method="post"></form><form method="post" data-method="put"></form><form></form>';
     const dispatcher = new Dispatcher();
 
-    expect(dispatcher.getFormMethod(document.forms[0])).toBe('GET');
-    expect(dispatcher.getFormMethod(document.forms[1])).toBe('GET');
+    expect(dispatcher.getFormMethod(document.forms[0])).toBe('post');
+    expect(dispatcher.getFormMethod(document.forms[1])).toBe('put');
+    expect(dispatcher.getFormMethod(document.forms[2])).toBe('get');
+  });
+
+  test('getFormMethod returns GET without a form', () => {
+    expect(new Dispatcher().getFormMethod()).toBe('GET');
   });
 
   test('getFormData returns the fields of the form that is the event target', () => {

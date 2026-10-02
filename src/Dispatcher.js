@@ -444,8 +444,10 @@ export default class Dispatcher {
    * @return {string}
    */
   getFormMethod(form) {
-    return (this.#form?.dataset?.method) ? form?.dataset?.method
-      : (this.#form?.getAttribute('method') ?? (this.#form?.method ?? 'GET'));
+    if (form?.dataset?.method) {
+      return form.dataset.method;
+    }
+    return form?.getAttribute('method') ?? form?.method ?? 'GET';
   }
 
   /**
