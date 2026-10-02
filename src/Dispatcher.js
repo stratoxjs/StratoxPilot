@@ -54,20 +54,22 @@ export default class Dispatcher {
    * Push post state
    * @param  {string} path     URI path or hash
    * @param  {Object} request  Add post form data
-   * @return {Object} Instance of formData
+   * @return {Object} The post data it was given
    */
   postTo(path, request = {}) {
-    return this.mapTo('POST', path, false, request);
+    this.mapTo('POST', path, false, request);
+    return request;
   }
 
   /**
    * Push put state
    * @param  {string} path     URI path or hash
    * @param  {Object} request  Add post form data
-   * @return {Object} Instance of formData
+   * @return {Object} The post data it was given
    */
   putTo(path, request = {}) {
-    return this.mapTo('PUT', path, false, request);
+    this.mapTo('PUT', path, false, request);
+    return request;
   }
 
   /**
