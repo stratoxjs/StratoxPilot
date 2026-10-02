@@ -167,7 +167,7 @@ export default class StateHandler {
    * @param {Object} addStates
    */
   setDefault(defaultArg) {
-    if (typeof defaultArg !== 'object') {
+    if (typeof defaultArg !== 'object' || defaultArg === null) {
       throw new Error('The first argument of the Stratox builder "setDefault" must be an object!');
     }
     const state = this.get();

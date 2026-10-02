@@ -231,13 +231,13 @@ describe('set, update and setDefault', () => {
     expect(handler.get()).toEqual({ a: 1, b: 3 });
   });
 
-  test.each(['text', 5, undefined])('setDefault throws its own error for %j', (value) => {
+  test.each(['text', 5, undefined, null])('setDefault throws its own error for %j', (value) => {
     expect(() => new StateHandler().setDefault(value))
       .toThrow('The first argument of the Stratox builder "setDefault" must be an object!');
   });
 
-  test('setDefault(null) throws a TypeError instead of its own error (audit pilot F29)', () => {
-    expect(() => new StateHandler().setDefault(null)).toThrow(TypeError);
+  test('setDefault(null) throws its own error, not a TypeError (audit pilot F29, fixed)', () => {
+    expect(() => new StateHandler().setDefault(null)).not.toThrow(TypeError);
   });
 });
 
