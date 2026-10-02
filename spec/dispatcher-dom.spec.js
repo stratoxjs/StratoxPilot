@@ -61,12 +61,12 @@ describe('fragmentPrefix', () => {
     expect(seen).toEqual(['200:start', '200:about']);
   });
 
-  test('is not added by navigateTo, so navigateTo("#about") gives 404 (audit pilot F27)', () => {
+  test('is added by navigateTo when missing: navigateTo("#about") goes to #!about (audit pilot F27, fixed)', () => {
     const { dispatcher, seen } = startDispatcher({ fragmentPrefix: '!' }, 'fragment');
     dispatcher.navigateTo('#about');
 
-    expect(window.location.hash).toBe('#about');
-    expect(seen).toEqual(['200:start', '404:null']);
+    expect(window.location.hash).toBe('#!about');
+    expect(seen).toEqual(['200:start', '200:about']);
   });
 });
 

@@ -628,6 +628,11 @@ export default class Dispatcher {
       path = path.slice(0, queryStart);
       request = { ...pathQuery, ...(typeof request === 'object' ? request : {}) };
     }
+    // With fragmentPrefix "!", "#about" becomes "#!about"; "#!about" stays as it is (audit F27)
+    const { fragmentPrefix } = this.#configs;
+    if (typeof path === 'string' && path.startsWith('#') && !path.startsWith(`#${fragmentPrefix}`)) {
+      path = `#${fragmentPrefix}${path.substring(1)}`;
+    }
     let pathname = path;
     let queryStr = '';
     if (typeof request === 'object') {
