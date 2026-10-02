@@ -1,6 +1,7 @@
 // @vitest-environment happy-dom
 import { beforeEach, describe, expect, test } from 'vitest';
 import StateHandler from '../src/StateHandler';
+import { Router, Dispatcher } from '../src/index';
 
 beforeEach(() => {
   window.history.replaceState({}, '', '/');
@@ -103,7 +104,7 @@ describe('window events', () => {
     expect(new StateHandler().off('no-such-event')).toBe(false);
   });
 
-  test('off() removes only the last window listener and leaves all handlers for emit (audit pilot F15)', () => {
+  test('off() removes every window listener of the event (audit pilot F15, fixed)', () => {
     const handler = new StateHandler();
     const calls = [];
     handler.on('off-event', () => calls.push('first'));
@@ -111,9 +112,65 @@ describe('window events', () => {
 
     expect(handler.off('off-event')).toBe(true);
     window.dispatchEvent(new Event('off-event'));
-    expect(calls).toEqual(['first']);
 
-    handler.emit('off-event', {});
-    expect(calls).toEqual(['first', 'first', 'second']);
+    expect(calls).toEqual([]);
+  });
+
+  test('off() removes every handler, so emit finds none (audit pilot F15, fixed)', () => {
+    const handler = new StateHandler();
+    handler.on('off-emit-event', () => {});
+    handler.on('off-emit-event', () => {});
+
+    handler.off('off-emit-event');
+
+    expect(() => handler.emit('off-emit-event', {}))
+      .toThrow('Trying to emit to an event (off-emit-event) that does not yet exist.');
+  });
+
+  test('on() after off() starts again with only the new handler (audit pilot F15, fixed)', () => {
+    const handler = new StateHandler();
+    const calls = [];
+    handler.on('again-event', () => calls.push('old'));
+    handler.off('again-event');
+    handler.on('again-event', () => calls.push('new'));
+
+    window.dispatchEvent(new Event('again-event'));
+    handler.emit('again-event', {});
+
+    expect(calls).toEqual(['new', 'new']);
+  });
+
+  test('off() leaves other events alone', () => {
+    const handler = new StateHandler();
+    const calls = [];
+    handler.on('removed-event', () => calls.push('removed'));
+    handler.on('kept-event', () => calls.push('kept'));
+
+    handler.off('removed-event');
+    window.dispatchEvent(new Event('kept-event'));
+    handler.emit('kept-event', {});
+
+    expect(calls).toEqual(['kept', 'kept']);
+  });
+
+  test('off() with module: false removes the handlers and returns true (audit pilot F15, fixed)', () => {
+    const handler = new StateHandler({}, { module: false });
+    handler.on('module-off-remove', () => {});
+
+    expect(handler.off('module-off-remove')).toBe(true);
+    expect(() => handler.emit('module-off-remove', {})).toThrow('does not yet exist');
+  });
+
+  test('a dispatcher stops dispatching after off("popstate")', async () => {
+    const router = new Router();
+    router.get('/', 'start');
+    const dispatcher = new Dispatcher();
+    const responses = [];
+    dispatcher.dispatcher(router, dispatcher.serverParams('path'), (response) => responses.push(response));
+
+    dispatcher.getStateHandler().off('popstate');
+    window.dispatchEvent(new PopStateEvent('popstate', { state: {} }));
+
+    expect(responses.map((response) => response.controller)).toEqual(['start']);
   });
 });

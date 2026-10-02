@@ -91,14 +91,17 @@ describe('events', () => {
     expect(events).toEqual([{ details: { a: 1 } }]);
   });
 
-  test('off returns false without a window, and the handler stays registered (audit pilot F15)', () => {
+  test('off removes the handlers without a window too and returns true (audit pilot F15, fixed)', () => {
     const handler = new StateHandler();
-    const calls = [];
-    handler.on('change', () => calls.push('called'));
+    handler.on('change', () => {});
 
-    expect(handler.off('change')).toBe(false);
-    handler.emit('change', {});
-    expect(calls).toEqual(['called']);
+    expect(handler.off('change')).toBe(true);
+    expect(() => handler.emit('change', {}))
+      .toThrow('Trying to emit to an event (change) that does not yet exist.');
+  });
+
+  test('off returns false for an event without handlers', () => {
+    expect(new StateHandler().off('change')).toBe(false);
   });
 });
 

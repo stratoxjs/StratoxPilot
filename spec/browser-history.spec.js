@@ -2,8 +2,7 @@
 import { beforeAll, beforeEach, describe, expect, test } from 'vitest';
 import { Router, Dispatcher } from '../src/index';
 
-// One dispatcher for the whole file: each dispatcher() call adds a window popstate
-// listener that cannot be removed through the public API (audit pilot F15).
+// One dispatcher for the whole file: each dispatcher() call adds a window popstate listener.
 let dispatcher;
 let responses = [];
 
