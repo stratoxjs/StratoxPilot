@@ -75,7 +75,7 @@ describe('back and forward', () => {
     expect(request.get.get('q')).toBe('sofa');
   });
 
-  test('back to a page reached by postTo dispatches the POST again with the same data (audit pilot F30)', async () => {
+  test('back to a page reached by postTo dispatches the POST again, marked fromHistory (audit pilot F30, fixed)', async () => {
     dispatcher.postTo('/contact', { name: 'Ada' });
     dispatcher.navigateTo('/about');
 
@@ -83,10 +83,61 @@ describe('back and forward', () => {
     window.history.back();
     await popstate;
 
-    const { verb, controller, request } = responses.at(-1);
+    const { verb, controller, request, fromHistory } = responses.at(-1);
     expect(verb).toBe('POST');
     expect(controller).toBe('contact');
     expect(request.post).toEqual({ name: 'Ada' });
+    expect(fromHistory).toBe(true);
+  });
+});
+
+describe('response.fromHistory (audit pilot F30, fixed)', () => {
+  test('is false for navigateTo and postTo', () => {
+    dispatcher.navigateTo('/about');
+    dispatcher.postTo('/contact', { name: 'Ada' });
+
+    expect(responses.map((response) => response.fromHistory)).toEqual([false, false]);
+  });
+
+  test('is true after back and after forward', async () => {
+    dispatcher.navigateTo('/');
+    dispatcher.navigateTo('/about');
+    let popstate = nextPopstate();
+    window.history.back();
+    await popstate;
+    popstate = nextPopstate();
+    window.history.forward();
+    await popstate;
+
+    expect(responses.map((response) => [response.controller, response.fromHistory])).toEqual([
+      ['start', false],
+      ['about', false],
+      ['start', true],
+      ['about', true],
+    ]);
+  });
+
+  test('is true for a popstate event fired on window', () => {
+    dispatcher.navigateTo('/about');
+
+    window.dispatchEvent(new PopStateEvent('popstate', { state: window.history.state }));
+
+    expect(responses.at(-1).controller).toBe('about');
+    expect(responses.at(-1).fromHistory).toBe(true);
+  });
+
+  test('is false for a state update after back', async () => {
+    dispatcher.postTo('/contact', { name: 'Ada' });
+    dispatcher.navigateTo('/about');
+    const popstate = nextPopstate();
+    window.history.back();
+    await popstate;
+
+    dispatcher.getStateHandler().update({ count: 1 });
+
+    const { controller, fromHistory } = responses.at(-1);
+    expect(controller).toBe('contact');
+    expect(fromHistory).toBe(false);
   });
 });
 
