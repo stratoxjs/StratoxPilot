@@ -108,7 +108,9 @@ export default class StateHandler {
     }
     */
     if(typeof key === "string" || typeof key === "number") {
-      return (StateHandler.#stateObject?.[key]) ? StateHandler.#stateObject[key] : defaultVal;
+      // Only a missing value gives the default; a stored 0, '', false or null is returned (audit F13)
+      const value = StateHandler.#stateObject?.[key];
+      return (value === undefined) ? defaultVal : value;
     }
     return StateHandler.#stateObject;
   }

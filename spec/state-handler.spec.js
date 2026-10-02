@@ -168,9 +168,29 @@ describe('get', () => {
     expect(new StateHandler().get('missing', 'default')).toBe('default');
   });
 
-  test.each([0, '', false, null])('returns the default when the stored value is %j (audit pilot F13)', (value) => {
+  test.each([
+    ['0', 0],
+    ['an empty string', ''],
+    ['false', false],
+    ['null', null],
+    ['NaN', NaN],
+  ])('returns the stored value %s, not the default (audit pilot F13, fixed)', (name, value) => {
     const handler = new StateHandler();
     handler.set({ value });
+
+    expect(handler.get('value', 'default')).toBe(value);
+  });
+
+  test('returns a stored 0 for a numeric key (audit pilot F13, fixed)', () => {
+    const handler = new StateHandler();
+    handler.set(0, 0);
+
+    expect(handler.get(0, 'default')).toBe(0);
+  });
+
+  test('returns the default when the stored value is undefined', () => {
+    const handler = new StateHandler();
+    handler.set({ value: undefined });
 
     expect(handler.get('value', 'default')).toBe('default');
   });
