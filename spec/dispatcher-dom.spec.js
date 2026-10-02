@@ -70,8 +70,10 @@ describe('fragmentPrefix', () => {
   });
 });
 
+// serverParams('path') reads location.pathname, which never contains the query, so audit
+// pilot F26 did not affect browser path routing; this guards that it stays that way.
 describe('query string in the path', () => {
-  test('navigateTo keeps it in the browser URL and dispatches the path without it (audit pilot F26, fixed)', () => {
+  test('navigateTo keeps it in the browser URL and dispatches the route', () => {
     const { dispatcher, seen } = startDispatcher({}, 'path');
     dispatcher.navigateTo('/about?page=2');
 
