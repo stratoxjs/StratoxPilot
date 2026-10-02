@@ -425,11 +425,15 @@ export default class Dispatcher {
     const inst = this;
     if (this.#configs.catchForms && (typeof document === 'object')) {
       document.addEventListener('submit', (event) => {
+        const url = new URL(event.target.action);
+        // A form for another site leaves the page as usual (audit F16)
+        if (url.origin !== window.location.origin) {
+          return;
+        }
         event.preventDefault();
         inst.#form = event.target;
         const formData = new FormData(inst.#form);
         const method = inst.getFormMethod(inst.#form).toUpperCase();
-        const url = new URL(inst.#form.action);
         if (method === 'POST' || method === 'PUT') {
           inst.mapTo(method, url, inst.#paramsToObj(url.search), Object.fromEntries(formData));
         } else {

@@ -35,7 +35,10 @@ beforeEach(() => {
     <form id="get-query" action="/search?page=2" method="get"><input name="q" value="sofa"></form>
     <form id="post" action="/contact" method="post"><input name="name" value="Ada"></form>
     <form id="put" action="/contact" method="post" data-method="put"><input name="name" value="Ada"></form>
-    <form id="external" action="https://other.example/x" method="get"><input name="a" value="1"></form>`;
+    <form id="external" action="https://other.example/x" method="get"><input name="a" value="1"></form>
+    <form id="external-post" action="https://other.example/contact" method="post"><input name="a" value="1"></form>
+    <form id="other-port" action="${window.location.protocol}//${window.location.hostname}:1/x" method="get"></form>
+    <form id="same-origin" action="${window.location.origin}/search" method="get"><input name="q" value="sofa"></form>`;
 });
 
 // Runs first: the catchForms listener added below is on document and cannot be
@@ -105,12 +108,30 @@ describe('with catchForms', () => {
     expect(responses.at(-1).controller).toBe('search');
   });
 
-  test('a form for another site is intercepted and its path dispatched locally (audit pilot F16)', () => {
-    expect(submitForm('external')).toBe(true);
+  test('a form for another site is not intercepted and nothing is dispatched (audit pilot F16, fixed)', () => {
+    expect(submitForm('external')).toBe(false);
+
+    expect(window.location.pathname).toBe('/');
+    expect(responses).toEqual([]);
+  });
+
+  test('a POST form for another site is not intercepted (audit pilot F16, fixed)', () => {
+    expect(submitForm('external-post')).toBe(false);
+
+    expect(responses).toEqual([]);
+  });
+
+  test('a form for the same host on another port is not intercepted (audit pilot F16, fixed)', () => {
+    expect(submitForm('other-port')).toBe(false);
+
+    expect(responses).toEqual([]);
+  });
+
+  test('a form with a full URL to this site is intercepted', () => {
+    expect(submitForm('same-origin')).toBe(true);
 
     const { controller, request } = responses.at(-1);
-    expect(window.location.pathname).toBe('/x');
-    expect(controller).toBe('local-x');
-    expect(request.get.get('a')).toBe('1');
+    expect(controller).toBe('search');
+    expect(request.get.get('q')).toBe('sofa');
   });
 });
