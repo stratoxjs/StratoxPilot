@@ -91,26 +91,59 @@ describe('back and forward', () => {
   });
 });
 
-// update() calls refresh(), which repeats the dispatcher's last pushState.
-describe('state update after navigation (audit pilot F28)', () => {
-  test('adds a history entry and dispatches the current route again', () => {
+// update() calls refresh(), which dispatches the current history entry again.
+describe('state update after navigation (audit pilot F28, fixed)', () => {
+  test('adds no history entry and dispatches the current route again', () => {
     dispatcher.navigateTo('/about');
     const lengthBefore = window.history.length;
 
     dispatcher.getStateHandler().update({ count: 1 });
 
-    expect(window.history.length).toBe(lengthBefore + 1);
+    expect(window.history.length).toBe(lengthBefore);
+    expect(window.location.pathname).toBe('/about');
     expect(responses.map((response) => response.controller)).toEqual(['about', 'about']);
   });
 
-  test('after back, moves to the last page that was pushed instead of the current one', async () => {
+  test('after back, dispatches the page that is shown and stays there', async () => {
     dispatcher.navigateTo('/');
+    dispatcher.navigateTo('/about');
+    const popstate = nextPopstate();
+    window.history.back();
+    await popstate;
+    const lengthBefore = window.history.length;
+
+    dispatcher.getStateHandler().update({ count: 1 });
+
+    expect(window.location.pathname).toBe('/');
+    expect(window.history.length).toBe(lengthBefore);
+    expect(responses.at(-1).controller).toBe('start');
+  });
+
+  test('after back, the GET query of the shown page is dispatched again', async () => {
+    dispatcher.navigateTo('/search', { q: 'sofa' });
     dispatcher.navigateTo('/about');
     const popstate = nextPopstate();
     window.history.back();
     await popstate;
 
     dispatcher.getStateHandler().update({ count: 1 });
+
+    const { controller, request } = responses.at(-1);
+    expect(controller).toBe('search');
+    expect(request.get.get('q')).toBe('sofa');
+  });
+
+  test('after back, forward still reaches the next page', async () => {
+    dispatcher.navigateTo('/');
+    dispatcher.navigateTo('/about');
+    let popstate = nextPopstate();
+    window.history.back();
+    await popstate;
+    dispatcher.getStateHandler().update({ count: 1 });
+
+    popstate = nextPopstate();
+    window.history.forward();
+    await popstate;
 
     expect(window.location.pathname).toBe('/about');
     expect(responses.at(-1).controller).toBe('about');

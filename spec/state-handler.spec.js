@@ -252,7 +252,7 @@ describe('refresh', () => {
     expect(events).toEqual([{ state: { b: 2 }, details: { a: 1, b: 2 } }]);
   });
 
-  test('repeats the last pushState and ignores its argument once pushState has run (audit pilot F28)', () => {
+  test('emits the last pushed state again and ignores its argument once pushState has run (audit pilot F28: the argument part is unchanged)', () => {
     const { handler, events } = listeningHandler();
     handler.pushState('/page', { count: 1 });
 
