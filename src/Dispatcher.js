@@ -147,6 +147,10 @@ export default class Dispatcher {
   pushState(path, stateArg = {}) {
     const state = this.#assignRequest(stateArg);
     state.method = state.method.toUpperCase();
+    // The dispatcher matches state.request.path; without one, use the path being pushed (audit F25)
+    if (typeof state.request.path !== 'string') {
+      state.request = { ...state.request, path };
+    }
     if (!Router.isValidVerb(state.method)) {
       throw new Error(`The verb (http method) "${state.method}" is not allowed. Supported verbs: ${Router.getValidVerbs().join(', ')}`);
     }
