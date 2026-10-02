@@ -85,8 +85,16 @@ describe('regex characters in literal segments (audit pilot F5)', () => {
     expect(matchRoute('/a(b)', '/a(b)').status).toBe(404);
   });
 
-  test.each(['/c++', '/other'])('throws SyntaxError for %s when a route is the literal /c++', (uri) => {
-    expect(() => matchRoute('/c++', uri)).toThrow(SyntaxError);
+  test.each(['/c++', '/other'])('a literal that is not a valid regex, /c++, matches nothing: %s is 404 (audit pilot F5, crash fixed)', (uri) => {
+    expect(matchRoute('/c++', uri).status).toBe(404);
+  });
+
+  test('routes after a literal that is not a valid regex still match', () => {
+    const router = new Router();
+    router.get('/c++', 'invalid');
+    router.get('/other', 'other');
+
+    expect(new Dispatcher().validateDispatch(router, 'GET', '/other').controller).toBe('other');
   });
 });
 

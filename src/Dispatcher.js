@@ -297,10 +297,13 @@ export default class Dispatcher {
     const inst = this;
     const uriParts = [];
     let hasError = false;
+    const regex = this.#segmentRegex(value);
+    if (regex === null) {
+      return false;
+    }
     for (let x = 0; x < uri.length; x++) {
       uriParts.push(inst.htmlspecialchars(decodeURIComponent(uri[x])));
       const join = uriParts.join('/');
-      const regex = new RegExp(`^${value}$`);
       if (join.match(regex)) {
         if (value !== '.+') return uriParts;
       } else {
@@ -309,6 +312,24 @@ export default class Dispatcher {
     }
     if (!hasError && value === '.+') return uriParts;
     return false;
+  }
+
+  /**
+   * Build the regular expression for one route segment.
+   * Literal segments are used as regular expressions too, so a literal such as "c++" is not
+   * a valid one. Such a segment matches nothing instead of breaking every dispatch (audit F5).
+   * @param  {string} value  Segment pattern
+   * @return {RegExp|null}   Null when the pattern is not a valid regular expression
+   */
+  #segmentRegex(value) {
+    try {
+      return new RegExp(`^${value}$`);
+    } catch (error) {
+      if (error instanceof SyntaxError) {
+        return null;
+      }
+      throw error;
+    }
   }
 
   /**
