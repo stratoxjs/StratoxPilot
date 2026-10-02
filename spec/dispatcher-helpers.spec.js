@@ -143,6 +143,14 @@ describe('response object', () => {
 
     expect(responses[0].config).toEqual({ title: 'Start' });
   });
+
+  test('has fromHistory false without a browser, also for a state update (audit pilot F30, fixed)', () => {
+    const { dispatcher, responses } = startDispatcher();
+    dispatcher.postTo('/form', { name: 'Ada' });
+    dispatcher.getStateHandler().update({ count: 1 });
+
+    expect(responses.map((response) => response.fromHistory)).toEqual([false, false, false]);
+  });
 });
 
 describe('request and serverParams', () => {

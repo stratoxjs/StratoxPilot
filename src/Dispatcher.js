@@ -172,7 +172,9 @@ export default class Dispatcher {
       inst.#state = inst.#assignRequest(event.details);
       const uriPath = inst.baseDir(inst.#getDynUri(path).toString());
       const dispatcher = inst.validateDispatch(routeCollection, inst.#state.method, uriPath);
-      const response = inst.#assignResponse(dispatcher);
+      // Back and Forward fire the browser's own popstate event; pushState and refresh emit a plain object (audit F30)
+      const fromHistory = (typeof PopStateEvent === 'function' && event instanceof PopStateEvent);
+      const response = inst.#assignResponse({ ...dispatcher, fromHistory });
       fn.apply(inst, [response, response.status]);
     });
 
@@ -536,6 +538,7 @@ export default class Dispatcher {
       path: [],
       vars: {},
       form: this.#form,
+      fromHistory: false,
       request: {
         get: {},
         post: {},

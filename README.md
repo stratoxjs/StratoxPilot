@@ -247,6 +247,7 @@ The response structure, as illustrated with the router pattern `"/{page:product}
         "slug": "chesterfield"
     },
     "form": {},
+    "fromHistory": false,
     "request": {
         "get": "URLSearchParams",
         "post": {}
@@ -258,6 +259,10 @@ The response structure, as illustrated with the router pattern `"/{page:product}
 - **path:** The URI path as an array.
 - **vars:** An object mapping path segments to keys.
 - **form:** Captures submitted DOM form elements.
+- **fromHistory:** `true` when the browser fired the dispatch with its own popstate event: Back, Forward, or a link
+  that only changes the hash. Back or Forward to a page reached by `postTo`, `putTo` or a caught form dispatches that
+  POST or PUT again with the same data; a controller can check `fromHistory` to skip side effects such as sending
+  the data a second time. `false` for `navigateTo`, `postTo`, caught forms and state updates.
 - **request.get:** An instance of URLSearchParams for GET requests.
 - **request.post:** An object with expected postdata
 
