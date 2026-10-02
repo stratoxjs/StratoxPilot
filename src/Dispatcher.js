@@ -270,13 +270,14 @@ export default class Dispatcher {
 
     const statusCode = (!hasError && (uri.length === path.length) ? 200 : statusError);
     const filterPath = [...path].filter((val) => (val !== ''));
-    const statusErrContr = routeCollection.getStatusError(statusCode);
+    const errorRoute = routeCollection.getStatusErrorRoute(statusCode);
+    const route = errorRoute || current;
 
     return {
       verb: method,
       status: statusCode,
-      controller: (statusErrContr) || (current?.controller ?? null),
-      config: (statusErrContr) || (current?.config ?? null),
+      controller: route?.controller ?? null,
+      config: route?.config ?? null,
       path: filterPath,
       vars,
       request: {

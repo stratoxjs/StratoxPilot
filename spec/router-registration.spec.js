@@ -167,6 +167,25 @@ describe('getStatusError', () => {
   });
 });
 
+describe('getStatusErrorRoute', () => {
+  test('returns the whole [STATUS_ERROR] route for an error status', () => {
+    const router = new Router();
+    router.get('[STATUS_ERROR]', 'error', { title: 'Error' });
+
+    expect(router.getStatusErrorRoute(404)).toEqual({
+      verb: ['GET'], pattern: '[STATUS_ERROR]', controller: 'error', config: { title: 'Error' },
+    });
+  });
+
+  test('returns false for status 200 and when there is no error route', () => {
+    const router = new Router();
+    router.get('[STATUS_ERROR]', 'error');
+
+    expect(router.getStatusErrorRoute(200)).toBe(false);
+    expect(new Router().getStatusErrorRoute(404)).toBe(false);
+  });
+});
+
 describe('hasPostRoutes', () => {
   test('returns false when there is no POST route', () => {
     const router = new Router();
