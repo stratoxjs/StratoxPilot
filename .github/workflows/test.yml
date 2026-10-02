@@ -12,11 +12,15 @@ permissions:
 jobs:
   test:
     runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        # Both maintained LTS lines; Vitest 5 does not support Node 23 (D-021, D-025)
+        node-version: [22, 24]
     steps:
       - uses: actions/checkout@v7
       - uses: actions/setup-node@v7
         with:
-          node-version: 22
+          node-version: ${{ matrix.node-version }}
       # package-lock.json is not committed, so npm ci cannot be used (D-016)
       - run: npm install
       - run: npm test
