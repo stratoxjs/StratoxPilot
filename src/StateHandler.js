@@ -36,16 +36,16 @@ export default class StateHandler {
   }
 
   /**
-   * Un bind / remove event
+   * Un bind / remove event: all of its handlers and window listeners (audit F15)
    * @param  {string} eventName
-   * @return {bool}
+   * @return {bool} false when the event had no handlers
    */
   off(eventName) {
-    if (typeof this.#unbind[eventName] === 'function') {
-      this.#unbind[eventName]();
-      return true;
-    }
-    return false;
+    const hadHandlers = Array.isArray(this.#handlers[eventName]);
+    (this.#unbind[eventName] ?? []).forEach((unbind) => unbind());
+    delete this.#unbind[eventName];
+    delete this.#handlers[eventName];
+    return hadHandlers;
   }
 
   /**
@@ -233,7 +233,8 @@ export default class StateHandler {
 
     if (this.#config.module && typeof window === 'object') {
       window.addEventListener(eventName, handler);
-      this.#unbind[eventName] = () => window.removeEventListener(eventName, handler);
+      if (!this.#unbind[eventName]) this.#unbind[eventName] = [];
+      this.#unbind[eventName].push(() => window.removeEventListener(eventName, handler));
     }
     return handler;
   }
