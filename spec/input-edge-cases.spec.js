@@ -42,8 +42,19 @@ describe('percent-encoding and plain special characters', () => {
     { pattern: '/{name:[^/]+}', uri: '/%E0%A4%A' },
     { pattern: '/{name:[^/]+}', uri: '/%' },
     { pattern: '/about', uri: '/%' },
-  ])('throws URIError for the malformed encoding $uri on route $pattern (audit pilot F7)', ({ pattern, uri }) => {
-    expect(() => matchRoute(pattern, uri)).toThrow(URIError);
+  ])('returns 404 for the malformed encoding $uri on route $pattern (audit pilot F7, fixed)', ({ pattern, uri }) => {
+    expect(matchRoute(pattern, uri).status).toBe(404);
+  });
+
+  test('gives a malformed URI to the error route (audit pilot F7, fixed)', () => {
+    const router = new Router();
+    router.get('/{page:.+}', 'catch-all');
+    router.get('[STATUS_ERROR]', 'error');
+
+    const result = new Dispatcher().validateDispatch(router, 'GET', '/%');
+
+    expect(result.status).toBe(404);
+    expect(result.controller).toBe('error');
   });
 });
 
