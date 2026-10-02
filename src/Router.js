@@ -40,13 +40,14 @@ export default class Router {
       throw new Error(`Argument 2 (pattern: ${pattern}) already exists.`);
     }
 
+    const verbs = Router.validateVerb(verb);
     this.#router.push({
-      verb: Router.validateVerb(verb),
+      verb: verbs,
       pattern,
       controller,
       config: (config ?? {}),
     });
-    this.#protocol[verb] = { [pattern]: controller };
+    this.#protocol[verbs] = { [pattern]: controller };
   }
 
   /**
@@ -143,19 +144,17 @@ export default class Router {
   }
 
   /**
-     * Returned valid verb
-     * @param  {array} verbArg Collection of valid methods, else a error will be thrown
-     * @return {array}
+     * Upper-case and check a list of verbs; the list passed in is not changed
+     * @param  {array} verbArg Collection of methods, an error is thrown for one that is not supported
+     * @return {array} A new array with the upper-cased verbs
      */
   static validateVerb(verbArg) {
-    const verb = verbArg;
-    const inst = this;
-    for (let i = 0; i < verb.length; i++) {
-      verb[i] = verb[i].toUpperCase();
-      if (!Router.isValidVerb(verb[i])) {
-        throw new Error(`The verb (http method) "${verb[i]}" is not allowed. Supported verbs: ${inst.#validVerb.join(', ')}`);
+    const verbs = verbArg.map((verb) => verb.toUpperCase());
+    verbs.forEach((verb) => {
+      if (!Router.isValidVerb(verb)) {
+        throw new Error(`The verb (http method) "${verb}" is not allowed. Supported verbs: ${Router.#validVerb.join(', ')}`);
       }
-    }
-    return verb;
+    });
+    return verbs;
   }
 }

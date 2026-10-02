@@ -51,12 +51,13 @@ describe('registering routes', () => {
     expect(router.getRouters()[0].verb).toEqual(['GET', 'POST']);
   });
 
-  test('map upper-cases the array passed to it in place (audit pilot F11)', () => {
+  test('map leaves the array passed to it unchanged (audit pilot F11, fixed)', () => {
     const router = new Router();
     const verbs = ['get', 'post'];
     router.map(verbs, '/page', 'page');
 
-    expect(verbs).toEqual(['GET', 'POST']);
+    expect(verbs).toEqual(['get', 'post']);
+    expect(router.getRouters()[0].verb).toEqual(['GET', 'POST']);
   });
 });
 
@@ -229,11 +230,11 @@ describe('verb helpers', () => {
     expect(Router.isValidVerb(verb)).toBe(valid);
   });
 
-  test('validateVerb upper-cases the array in place and returns it (audit pilot F11)', () => {
+  test('validateVerb returns an upper-cased copy and leaves its argument unchanged (audit pilot F11, fixed)', () => {
     const verbs = ['get', 'Post'];
 
-    expect(Router.validateVerb(verbs)).toBe(verbs);
-    expect(verbs).toEqual(['GET', 'POST']);
+    expect(Router.validateVerb(verbs)).toEqual(['GET', 'POST']);
+    expect(verbs).toEqual(['get', 'Post']);
   });
 
   test('validateVerb names the upper-cased verb when it is not supported', () => {
