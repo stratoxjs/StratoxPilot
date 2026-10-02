@@ -217,8 +217,12 @@ describe('verb helpers', () => {
     expect(Router.getValidVerbs()).toEqual(['GET', 'POST', 'PUT', 'DELETE']);
   });
 
-  test('getValidVerbs returns the internal array, not a copy (audit pilot F24)', () => {
-    expect(Router.getValidVerbs()).toBe(Router.getValidVerbs());
+  test('getValidVerbs returns a copy, so changing it does not change the valid verbs (audit pilot F24, fixed)', () => {
+    const verbs = Router.getValidVerbs();
+    verbs.push('PATCH');
+
+    expect(Router.getValidVerbs()).not.toBe(verbs);
+    expect(Router.isValidVerb('PATCH')).toBe(false);
   });
 
   test.each([

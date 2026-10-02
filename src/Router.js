@@ -128,10 +128,10 @@ export default class Router {
 
   /**
      * Get all valid verbs
-     * @return {array}
+     * @return {array} A copy, so changing it does not change which verbs are valid
      */
   static getValidVerbs() {
-    return this.#validVerb;
+    return [...this.#validVerb];
   }
 
   /**
