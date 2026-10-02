@@ -50,12 +50,13 @@ describe('navigation methods', () => {
   test.each([
     { method: 'postTo', verb: 'POST', controller: 'post-form' },
     { method: 'putTo', verb: 'PUT', controller: 'put-form' },
-  ])('$method sends its data as the post object and returns false (audit pilot F9)', ({ method, verb, controller }) => {
+  ])('$method sends its data as the post object and returns it (audit pilot F9, fixed)', ({ method, verb, controller }) => {
     const { dispatcher, responses } = startDispatcher();
-    const result = dispatcher[method]('/form', { name: 'Ada' });
+    const data = { name: 'Ada' };
+    const result = dispatcher[method]('/form', data);
 
     const response = responses.at(-1);
-    expect(result).toBe(false);
+    expect(result).toBe(data);
     expect(response.verb).toBe(verb);
     expect(response.controller).toBe(controller);
     expect(response.request.post).toEqual({ name: 'Ada' });
