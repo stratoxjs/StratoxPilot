@@ -164,12 +164,20 @@ describe('[STATUS_ERROR] route', () => {
     expect(dispatch(router, 'GET', '/missing').controller).toBe('error');
   });
 
-  test('sets config to the error controller instead of the error route config (audit pilot F2)', () => {
+  test('sets config to the error route config (audit pilot F2, fixed)', () => {
     const router = new Router();
     router.get('/about', 'about', { title: 'About' });
     router.get('[STATUS_ERROR]', 'error', { title: 'Error' });
 
-    expect(dispatch(router, 'GET', '/missing').config).toBe('error');
+    expect(dispatch(router, 'GET', '/missing').config).toEqual({ title: 'Error' });
+  });
+
+  test('sets config to an empty object when the error route has none', () => {
+    const router = new Router();
+    router.get('/about', 'about', { title: 'About' });
+    router.get('[STATUS_ERROR]', 'error');
+
+    expect(dispatch(router, 'GET', '/missing').config).toEqual({});
   });
 });
 

@@ -95,13 +95,22 @@ export default class Router {
      * @return {mixed|false} False for status 200 or when there is no error route
      */
   getStatusError(status) {
+    return this.getStatusErrorRoute(status)?.controller ?? false;
+  }
+
+  /**
+     * Get the [STATUS_ERROR] route itself (verb, pattern, controller, config)
+     * @param  {int} status
+     * @return {object|false} False for status 200 or when there is no error route
+     */
+  getStatusErrorRoute(status) {
     if (status === 200) {
       return false;
     }
     const errorRoute = this.#router.findLast((route) => (
       route.pattern === '[STATUS_ERROR]' && route.verb.includes('GET')
     ));
-    return errorRoute?.controller ?? false;
+    return errorRoute ?? false;
   }
 
   /**
