@@ -89,15 +89,12 @@ export default class StateHandler {
       throw new Error('Argument 2 (state) in pushState method has to be a object');
     }
 
-    this.#currentState = () => {
-      StateHandler.#stateObject = state;
-      if (typeof window !== 'undefined' && this.#config.module && typeof window.history === 'object') {
-        window.history.pushState(state, titleStr, path);
-      }
-      this.emit('popstate', { state });
-    };
-
-    this.#currentState();
+    this.#currentState = state;
+    StateHandler.#stateObject = state;
+    if (this.#usesBrowserHistory()) {
+      window.history.pushState(state, titleStr, path);
+    }
+    this.emit('popstate', { state });
   }
 
   /**
@@ -117,18 +114,19 @@ export default class StateHandler {
   }
 
   /**
-   * Refresh the current state
-   * @param  {object} state
+   * Refresh the current state: emit popstate again without adding a history entry (audit F28).
+   * Once pushState has run, the state of the current history entry is used and the argument is ignored.
+   * @param  {object} state  Used only before the first pushState
    * @return {void}
    */
   refresh(state = {}) {
     if (typeof state !== 'object') {
       throw new Error('Argument 1 (state) in pushState method has to be a object');
     }
-    if (typeof this.#currentState === 'function') {
-      this.#currentState();
-    } else {
+    if (this.#currentState === undefined) {
       this.emit('popstate', { state });
+    } else {
+      this.emit('popstate', { state: this.#currentEntryState() });
     }
   }
 
@@ -188,6 +186,23 @@ export default class StateHandler {
       return this.#state(state);
     }
     return (typeof this.#state === 'object') ? this.#state : {};
+  }
+
+  /**
+   * Does this handler write to the browser history?
+   * @return {boolean}
+   */
+  #usesBrowserHistory() {
+    return typeof window !== 'undefined' && this.#config.module && typeof window.history === 'object';
+  }
+
+  /**
+   * The state of the page that is shown now. In a browser that is the current history entry,
+   * which after Back or Forward is not the last state pushed.
+   * @return {object|null}
+   */
+  #currentEntryState() {
+    return this.#usesBrowserHistory() ? window.history.state : this.#currentState;
   }
 
   /**

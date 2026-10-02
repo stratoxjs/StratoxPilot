@@ -30,7 +30,7 @@ describe('history', () => {
     expect(window.history.length).toBe(lengthBefore);
   });
 
-  test('refresh after pushState adds another history entry (audit pilot F28)', () => {
+  test('refresh after pushState adds no history entry (audit pilot F28, fixed)', () => {
     const handler = new StateHandler();
     handler.on('popstate', () => {});
     handler.pushState('/page', { count: 1 });
@@ -38,7 +38,33 @@ describe('history', () => {
 
     handler.refresh();
 
-    expect(window.history.length).toBe(lengthBefore + 1);
+    expect(window.history.length).toBe(lengthBefore);
+    expect(window.location.pathname).toBe('/page');
+  });
+
+  test('refresh after pushState emits the state of the current history entry (audit pilot F28, fixed)', () => {
+    const handler = new StateHandler();
+    const states = [];
+    handler.on('popstate', (event) => states.push(event.state));
+    handler.pushState('/page', { count: 1 });
+    window.history.replaceState({ count: 2 }, '', '/other');
+
+    handler.refresh();
+
+    expect(states).toEqual([{ count: 1 }, { count: 2 }]);
+  });
+
+  test('refresh with module: false emits the last pushed state and leaves the history alone', () => {
+    const handler = new StateHandler({}, { module: false });
+    const states = [];
+    handler.on('popstate', (event) => states.push(event.state));
+    handler.pushState('/page', { count: 1 });
+    const lengthBefore = window.history.length;
+
+    handler.refresh();
+
+    expect(states).toEqual([{ count: 1 }, { count: 1 }]);
+    expect(window.history.length).toBe(lengthBefore);
   });
 });
 
