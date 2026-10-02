@@ -227,9 +227,17 @@ describe('path helpers', () => {
   });
 
   test.each([
-    { root: '/app', path: '/shop/app/page', result: '/shop/page' },
-    { root: 'app', path: '/myapp/page', result: '/my/page' },
-  ])('baseDir removes root $root from the middle of $path (audit pilot F18)', ({ root, path, result }) => {
+    { root: '/app', path: '/shop/app/page' },
+    { root: 'app', path: '/myapp/page' },
+    { root: '/app', path: '/apple' },
+  ])('baseDir leaves $path unchanged with root $root (audit pilot F18, fixed)', ({ root, path }) => {
+    expect(new Dispatcher({ root }).baseDir(path)).toBe(path);
+  });
+
+  test.each([
+    { root: '/app', path: '/app', result: '/' },
+    { root: '/app/', path: '/app/page', result: '/page' },
+  ])('baseDir($path) with root $root is $result', ({ root, path, result }) => {
     expect(new Dispatcher({ root }).baseDir(path)).toBe(result);
   });
 
