@@ -98,11 +98,29 @@ describe('navigation methods', () => {
       .toThrow('The verb (http method) "PATCH" is not allowed.');
   });
 
-  test('pushState dispatches state.request.path, not its path argument (audit pilot F25)', () => {
+  test('pushState dispatches state.request.path when the state has one', () => {
     const { dispatcher, responses } = startDispatcher();
     dispatcher.pushState('/about', { method: 'GET', request: { path: '/' } });
 
     expect(responses.at(-1).controller).toBe('start');
+  });
+
+  test.each([
+    { label: 'no request', state: { method: 'GET' } },
+    { label: 'a request without a path', state: { method: 'GET', request: { get: {} } } },
+  ])('pushState dispatches its path argument when the state has $label (audit pilot F25, fixed)', ({ state }) => {
+    const { dispatcher, responses } = startDispatcher();
+    dispatcher.pushState('/about', state);
+
+    expect(responses.at(-1).controller).toBe('about');
+  });
+
+  test('pushState without a request path leaves the caller\'s request object unchanged', () => {
+    const { dispatcher } = startDispatcher();
+    const request = { get: {} };
+    dispatcher.pushState('/about', { method: 'GET', request });
+
+    expect(request).toEqual({ get: {} });
   });
 });
 
