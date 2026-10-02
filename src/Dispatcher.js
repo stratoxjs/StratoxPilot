@@ -1,5 +1,5 @@
-import StateHandler from './StateHandler';
-import Router from './Router';
+import StateHandler from './StateHandler.js';
+import Router from './Router.js';
 
 /**
  * Stratox Dispatcher
