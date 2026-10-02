@@ -6,5 +6,8 @@ export default defineConfig({
       'node_modules',
       'packages'
     ],
+    coverage: {
+      include: ['src/**'],
+    },
   }
 })

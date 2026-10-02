@@ -15,6 +15,7 @@ export default [
     ignores: [
       'spec/', 
       '*.spec.js', 
+      'coverage/',
     ]
   },
   {
