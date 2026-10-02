@@ -90,23 +90,30 @@ export default class Router {
   }
 
   /**
-     * Get status error router IF specified
+     * Get the controller of the [STATUS_ERROR] route, wherever it was registered
      * @param  {int} status
-     * @return {mixed|false}
+     * @return {mixed|false} False for status 200 or when there is no error route
      */
   getStatusError(status) {
-    if (status !== 200) {
-      return (this.#protocol?.GET?.['[STATUS_ERROR]'] ?? false);
+    if (status === 200) {
+      return false;
     }
-    return false;
+    const errorRoute = this.#router.findLast((route) => (
+      route.pattern === '[STATUS_ERROR]' && route.verb.includes('GET')
+    ));
+    return errorRoute?.controller ?? false;
   }
 
   /**
-     * Check if any post routes exists
-     * @return {Boolean}
+     * Get every route that accepts POST
+     * @return {object|false} { pattern: controller } for each POST route, or false when there is none
      */
   hasPostRoutes() {
-    return (this.#protocol?.POST ?? false);
+    const postRoutes = this.#router.filter((route) => route.verb.includes('POST'));
+    if (postRoutes.length === 0) {
+      return false;
+    }
+    return Object.fromEntries(postRoutes.map((route) => [route.pattern, route.controller]));
   }
 
   /**

@@ -145,7 +145,7 @@ describe('[STATUS_ERROR] route', () => {
     expect(result.controller).toBe('about');
   });
 
-  test('is lost when another GET route is registered after it (audit pilot F1)', () => {
+  test('still works when another GET route is registered after it (audit pilot F1, fixed)', () => {
     const router = new Router();
     router.get('[STATUS_ERROR]', 'error');
     router.get('/about', 'about');
@@ -153,7 +153,7 @@ describe('[STATUS_ERROR] route', () => {
     const result = dispatch(router, 'GET', '/missing');
 
     expect(result.status).toBe(404);
-    expect(result.controller).toBeNull();
+    expect(result.controller).toBe('error');
   });
 
   test('is kept when only a POST route is registered after it (audit pilot F1)', () => {

@@ -127,6 +127,24 @@ describe('duplicate pattern check (audit pilot F1)', () => {
 });
 
 describe('getStatusError', () => {
+  test('finds the error route wherever it was registered (audit pilot F1, fixed)', () => {
+    const router = new Router();
+    router.get('[STATUS_ERROR]', 'error');
+    router.get('/page', 'page');
+    router.post('/form', 'form');
+
+    expect(router.getStatusError(404)).toBe('error');
+  });
+
+  test('uses the last error route when there are several', () => {
+    const router = new Router();
+    router.get('[STATUS_ERROR]', 'first-error');
+    router.get('/page', 'page');
+    router.get('[STATUS_ERROR]', 'second-error');
+
+    expect(router.getStatusError(404)).toBe('second-error');
+  });
+
   test('returns false when there is no [STATUS_ERROR] route', () => {
     const router = new Router();
     router.get('/page', 'page');
@@ -157,19 +175,20 @@ describe('hasPostRoutes', () => {
     expect(router.hasPostRoutes()).toBe(false);
   });
 
-  test('returns only the last POST route as { pattern: controller } (audit pilot F1)', () => {
+  test('returns every POST route as { pattern: controller } (audit pilot F1, fixed)', () => {
     const router = new Router();
     router.post('/first', 'first');
+    router.get('/other', 'other');
     router.post('/second', 'second');
 
-    expect(router.hasPostRoutes()).toEqual({ '/second': 'second' });
+    expect(router.hasPostRoutes()).toEqual({ '/first': 'first', '/second': 'second' });
   });
 
-  test('returns false when POST is only registered in an array of verbs (audit pilot F1)', () => {
+  test('includes a route that has POST in an array of verbs (audit pilot F1, fixed)', () => {
     const router = new Router();
     router.map(['GET', 'POST'], '/page', 'page');
 
-    expect(router.hasPostRoutes()).toBe(false);
+    expect(router.hasPostRoutes()).toEqual({ '/page': 'page' });
   });
 });
 
