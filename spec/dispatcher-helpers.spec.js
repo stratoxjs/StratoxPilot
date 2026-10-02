@@ -222,6 +222,15 @@ describe('path helpers', () => {
     expect(new Dispatcher().buildGetPath('#about', { a: 1 }).path).toBe('/?a=1#about');
   });
 
+  test.each([
+    { path: '#about', request: undefined, result: '#!about' },
+    { path: '#!about', request: undefined, result: '#!about' },
+    { path: '#about', request: { a: 1 }, result: '/?a=1#!about' },
+    { path: '/about', request: undefined, result: '/about' },
+  ])('buildGetPath($path) with fragmentPrefix "!" gives $result (audit pilot F27, fixed)', ({ path, request, result }) => {
+    expect(new Dispatcher({ fragmentPrefix: '!' }).buildGetPath(path, request).path).toBe(result);
+  });
+
   test('buildGetPath uses the hash of a URL as the pathname', () => {
     const result = new Dispatcher().buildGetPath(new URL('http://example.test/shop?q=1#cart'), { a: 1 });
 
