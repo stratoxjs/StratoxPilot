@@ -60,8 +60,8 @@ describe('HTML escaping of URI parts (audit pilot F6)', () => {
     expect(matchRoute('/{name:[^/]+}', uri).vars.name).toEqual([value]);
   });
 
-  test('turns | into the text "undefined"', () => {
-    expect(matchRoute('/{name:[^/]+}', '/a|b').vars.name).toEqual(['aundefinedb']);
+  test('keeps | as it is (audit pilot F6, | fixed)', () => {
+    expect(matchRoute('/{name:[^/]+}', '/a|b').vars.name).toEqual(['a|b']);
   });
 
   test('does not match a literal route containing & against the same URI', () => {

@@ -535,7 +535,8 @@ export default class Dispatcher {
   htmlspecialchars(value) {
     const char = this.#specCharMap;
     const keys = Object.keys(char);
-    const regex = new RegExp(`[${keys.join('|')}]`, 'g');
+    // A character class lists the characters without separators: [&<>"']
+    const regex = new RegExp(`[${keys.join('')}]`, 'g');
     return value.replace(regex, (match) => char[match]);
   }
 
