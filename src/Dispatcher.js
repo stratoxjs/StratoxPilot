@@ -11,8 +11,6 @@ export default class Dispatcher {
 
   #state = {};
 
-  #router;
-
   #configs = {};
 
   #form = null;
@@ -26,7 +24,6 @@ export default class Dispatcher {
   };
 
   constructor(configs = {}) {
-    const inst = this;
     this.#configs = {
       catchForms: false, // Auto catch forms
       fragmentPrefix: '', // Prefix hash fragment
@@ -459,7 +456,7 @@ export default class Dispatcher {
    * @return {string}
    */
   #escapeForwardSlash(pattern) {
-    return pattern.replace(/{[^}]+}/g, (match, a) => match.replace(/\//g, '[#SC#]'));
+    return pattern.replace(/{[^}]+}/g, (match) => match.replace(/\//g, '[#SC#]'));
   }
 
   /**
