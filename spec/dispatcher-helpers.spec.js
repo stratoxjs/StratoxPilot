@@ -250,9 +250,9 @@ describe('path helpers', () => {
 });
 
 describe('other helpers', () => {
-  test('htmlspecialchars escapes & < > " \' and turns | into "undefined" (audit pilot F6)', () => {
+  test('htmlspecialchars escapes & < > " \' and leaves | alone (audit pilot F6, | fixed)', () => {
     expect(new Dispatcher().htmlspecialchars('<a href="x">\'&|</a>'))
-      .toBe('&lt;a href=&quot;x&quot;&gt;&#39;&amp;undefined&lt;/a&gt;');
+      .toBe('&lt;a href=&quot;x&quot;&gt;&#39;&amp;|&lt;/a&gt;');
   });
 
   test('htmlspecialchars_decode reverses one level of escaping', () => {
