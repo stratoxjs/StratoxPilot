@@ -220,9 +220,11 @@ describe('verb helpers', () => {
   test('getValidVerbs returns a copy, so changing it does not change the valid verbs (audit pilot F24, fixed)', () => {
     const verbs = Router.getValidVerbs();
     verbs.push('PATCH');
+    const patchAccepted = Router.isValidVerb('PATCH');
+    verbs.pop(); // if the list were shared again, this keeps PATCH out of the other tests
 
     expect(Router.getValidVerbs()).not.toBe(verbs);
-    expect(Router.isValidVerb('PATCH')).toBe(false);
+    expect(patchAccepted).toBe(false);
   });
 
   test.each([
