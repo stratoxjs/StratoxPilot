@@ -302,7 +302,12 @@ export default class Dispatcher {
       return false;
     }
     for (let x = 0; x < uri.length; x++) {
-      uriParts.push(inst.htmlspecialchars(decodeURIComponent(uri[x])));
+      const part = this.#decodePart(uri[x]);
+      if (part === null) {
+        hasError = true;
+        break;
+      }
+      uriParts.push(inst.htmlspecialchars(part));
       const join = uriParts.join('/');
       if (join.match(regex)) {
         if (value !== '.+') return uriParts;
@@ -312,6 +317,22 @@ export default class Dispatcher {
     }
     if (!hasError && value === '.+') return uriParts;
     return false;
+  }
+
+  /**
+   * Decode one URI part
+   * @param  {string} part   A percent-encoded URI part
+   * @return {string|null}   Null when the encoding is malformed (such as "%"), so the part matches nothing (audit F7)
+   */
+  #decodePart(part) {
+    try {
+      return decodeURIComponent(part);
+    } catch (error) {
+      if (error instanceof URIError) {
+        return null;
+      }
+      throw error;
+    }
   }
 
   /**
