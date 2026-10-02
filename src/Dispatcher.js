@@ -618,8 +618,16 @@ export default class Dispatcher {
    * @param  {object} request
    * @return {object}
    */
-  buildGetPath(pathArg, request) {
+  buildGetPath(pathArg, requestArg) {
     let path = pathArg;
+    let request = requestArg;
+    // A query string in the path moves into the request, so "/about?x=1" matches "/about" (audit F26)
+    if (typeof path === 'string' && !path.startsWith('#') && path.includes('?')) {
+      const queryStart = path.indexOf('?');
+      const pathQuery = this.#paramsToObj(path.slice(queryStart + 1));
+      path = path.slice(0, queryStart);
+      request = { ...pathQuery, ...(typeof request === 'object' ? request : {}) };
+    }
     let pathname = path;
     let queryStr = '';
     if (typeof request === 'object') {

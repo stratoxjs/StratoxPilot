@@ -70,6 +70,16 @@ describe('fragmentPrefix', () => {
   });
 });
 
+describe('query string in the path', () => {
+  test('navigateTo keeps it in the browser URL and dispatches the path without it (audit pilot F26, fixed)', () => {
+    const { dispatcher, seen } = startDispatcher({}, 'path');
+    dispatcher.navigateTo('/about?page=2');
+
+    expect(window.location.pathname + window.location.search).toBe('/about?page=2');
+    expect(seen.at(-1)).toBe('200:about');
+  });
+});
+
 describe('root', () => {
   test('navigateTo adds the root to the browser URL and dispatches the path without it', () => {
     const { dispatcher, seen } = startDispatcher({ root: '/app' }, 'path');

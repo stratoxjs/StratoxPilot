@@ -84,11 +84,14 @@ describe('navigation methods', () => {
     expect(request.post).toEqual({ name: 'Ada' });
   });
 
-  test('a query string in the navigateTo path stays part of the matched path (audit pilot F26)', () => {
+  test('a query string in the navigateTo path moves into request.get (audit pilot F26, fixed)', () => {
     const { dispatcher, responses } = startDispatcher();
     dispatcher.navigateTo('/about?page=2');
 
-    expect(responses.at(-1).status).toBe(404);
+    const { status, controller, request } = responses.at(-1);
+    expect(status).toBe(200);
+    expect(controller).toBe('about');
+    expect(request.get.get('page')).toBe('2');
   });
 
   test('pushState throws for a verb that is not supported', () => {
@@ -207,6 +210,14 @@ describe('path helpers', () => {
   });
 
   // The docs show this result for navigateTo('#articles/...', { test: ... }) (audit pilot F17).
+  test('buildGetPath moves a query string in the path into the query; the request wins on the same key', () => {
+    expect(new Dispatcher().buildGetPath('/about?a=1&b=1', { b: 2 })).toEqual({
+      path: '/about?a=1&b=2',
+      query: { a: '1', b: 2 },
+      pathname: '/about',
+    });
+  });
+
   test('buildGetPath puts the query before a hash and resets the path to "/" (audit pilot F17)', () => {
     expect(new Dispatcher().buildGetPath('#about', { a: 1 }).path).toBe('/?a=1#about');
   });
