@@ -12,6 +12,7 @@
     "test": "vitest run",
     "test:dev": "vitest",
     "test:coverage": "vitest run --coverage",
+    "test:browser": "vitest run --config vitest.browser.config.js",
     "lint": "eslint . --ignore-pattern 'spec/*' --ignore-pattern 'examples/*'",
     "lint:fix": "eslint --fix . --ignore-pattern 'spec/*' --ignore-pattern 'examples/*'"
   },
@@ -42,11 +43,13 @@
   "license": "Apache-2.0",
   "devDependencies": {
     "@eslint/js": "^9.18.0",
+    "@vitest/browser-playwright": "^5.0.3",
     "@vitest/coverage-v8": "^5.0.3",
     "eslint": "^9.18.0",
     "express": "^4.18.2",
     "globals": "^17.13.0",
     "happy-dom": "^20.14.5",
+    "playwright": "^1.63.0",
     "vitest": "^5.0.3"
   }
 }
