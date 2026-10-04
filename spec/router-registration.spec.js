@@ -125,6 +125,14 @@ describe('duplicate pattern check (audit pilot F1)', () => {
 
     expect(router.getRouters()).toHaveLength(2);
   });
+
+  test('does not throw for a lower-case verb registered twice, because it is checked before upper-casing (guard, roadmap 4.2)', () => {
+    const router = new Router();
+    router.map('get', '/page', 'first');
+    router.map('get', '/page', 'second');
+
+    expect(router.getRouters().map((route) => route.verb)).toEqual([['GET'], ['GET']]);
+  });
 });
 
 describe('getStatusError', () => {
