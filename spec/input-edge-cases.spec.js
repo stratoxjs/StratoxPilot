@@ -123,3 +123,59 @@ describe('URI form is not normalized (audit pilot F23)', () => {
     expect(matchRoute(pattern, uri).status).toBe(404);
   });
 });
+
+// Roadmap 4.1 compiles each route once; these pin down when the old code built the regular
+// expressions, so an invalid one still fails exactly where it did.
+describe('an invalid regular expression inside braces', () => {
+  test('throws a SyntaxError for every dispatch that reaches it (guard, roadmap 4.1)', () => {
+    const router = new Router();
+    router.get('/{id:[0-9}', 'invalid');
+    const dispatcher = new Dispatcher();
+
+    expect(() => dispatcher.validateDispatch(router, 'GET', '/1')).toThrow(SyntaxError);
+    expect(() => dispatcher.validateDispatch(router, 'GET', '/1')).toThrow(SyntaxError);
+  });
+
+  test('does not throw when an earlier route matches the whole path (guard, roadmap 4.1)', () => {
+    const router = new Router();
+    router.get('/a', 'a');
+    router.get('/{id:[0-9}', 'invalid');
+
+    expect(new Dispatcher().validateDispatch(router, 'GET', '/a').controller).toBe('a');
+  });
+
+  test('does not throw when an earlier segment of the route fails (guard, roadmap 4.1)', () => {
+    expect(matchRoute('/shop/{id:[0-9}', '/other').status).toBe(404);
+  });
+
+  test('does not throw for a route with another verb (guard, roadmap 4.1)', () => {
+    const router = new Router();
+    router.post('/{id:[0-9}', 'invalid');
+
+    expect(new Dispatcher().validateDispatch(router, 'GET', '/1').status).toBe(404);
+  });
+});
+
+describe('one dispatcher, several dispatches', () => {
+  test('a route added after the first dispatch matches on the next one (guard, roadmap 4.1)', () => {
+    const router = new Router();
+    router.get('/a', 'a');
+    const dispatcher = new Dispatcher();
+    const before = dispatcher.validateDispatch(router, 'GET', '/b');
+    router.get('/b', 'b');
+
+    expect(before.status).toBe(404);
+    expect(dispatcher.validateDispatch(router, 'GET', '/b').controller).toBe('b');
+  });
+
+  test('the same pattern in two routers matches in both (guard, roadmap 4.1)', () => {
+    const first = new Router();
+    first.get('/{id:[0-9]+}', 'first');
+    const second = new Router();
+    second.get('/{id:[0-9]+}', 'second');
+    const dispatcher = new Dispatcher();
+
+    expect(dispatcher.validateDispatch(first, 'GET', '/1').vars).toEqual({ id: ['1'] });
+    expect(dispatcher.validateDispatch(second, 'GET', '/2')).toMatchObject({ controller: 'second', vars: { id: ['2'] } });
+  });
+});

@@ -15,6 +15,9 @@ export default class Dispatcher {
 
   #form = null;
 
+  // Route patterns split into segments with their regular expressions, built once per pattern
+  #compiledPatterns = new Map();
+
   #specCharMap = {
     '&': '&amp;',
     '<': '&lt;',
@@ -204,65 +207,34 @@ export default class Dispatcher {
   }
 
   /**
-   * Validate dispatch
+   * Validate dispatch: find the route for a verb and a URI.
+   * The routes are tried in order. The first one that matches the whole URI wins. Otherwise the first one
+   * that matched its own segments is the fallback, returned with the error status: 404, or 405 when the
+   * verb is not GET and a route tried does not accept it. The status, path and vars come from the last
+   * route tried (audit F21).
+   * @param  {Router|array} routeCollection
    * @param  {string} method  Verb (GET, POST)
    * @param  {uri} dipatch    The uri/hash to validate
    * @return {object|false}
    */
   validateDispatch(routeCollection, method, dipatch) {
-    const inst = this;
     const router = this.getRouterData(routeCollection);
     const uri = dipatch.split('/');
-    // const foundResult = false;
+    // The result of the last route tried; empty when there is no route
+    let match = { hasError: false, path: [], vars: {} };
     let current;
     let fallback;
-    let parts;
-    let regexItems;
-    let vars = {};
-    let path = [];
-    let hasError;
     let statusError = 404;
 
     for (let i = 0; i < router.length; i++) {
-      regexItems = [];
-      vars = {};
-      path = [];
-      hasError = false;
-      parts = uri;
-
+      match = { hasError: false, path: [], vars: {} };
       if (router[i].verb.includes(method)) {
-        const extractRouterData = inst.#escapeForwardSlash(router[i].pattern);
-        const routerData = extractRouterData.split('/');
-
-        for (let x = 0; x < routerData.length; x++) {
-          const regex = inst.#getMatchPattern(routerData[x]);
-          const hasRegex = (regex[1] !== undefined);
-          const value = (hasRegex) ? regex[2] : routerData[x];
-          regexItems.push(value);
-
-          const part = inst.#validateParts(parts, value);
-          if (part) {
-            // Escaped
-            if (part[0]) {
-              const int = (x - 1);
-              const key = (regex[1] ?? (int < 0 ? 0 : int));
-              vars[key] = part;
-            }
-
-            path = path.concat(part);
-            parts = parts.slice(part.length);
-          } else if (this.#isLossyParam(routerData[x])) {
-            hasError = true;
-            break;
-          }
-        }
-
-        if (!hasError) {
-          if(!fallback) {
-            // Potential fallback result passed to dispatcher
+        match = this.#matchRoute(router[i].pattern, uri);
+        if (!match.hasError) {
+          if (!fallback) {
             fallback = router[i];
           }
-          if(uri.length === path.length) {
+          if (uri.length === match.path.length) {
             current = router[i];
             break;
           }
@@ -272,10 +244,11 @@ export default class Dispatcher {
       }
     }
 
-    if(typeof current !== "object") {
-      current = (typeof fallback === "object") ? fallback : {};
+    if (typeof current !== 'object') {
+      current = (typeof fallback === 'object') ? fallback : {};
     }
 
+    const { hasError, path, vars } = match;
     const statusCode = (!hasError && (uri.length === path.length) ? 200 : statusError);
     const filterPath = [...path].filter((val) => (val !== ''));
     const errorRoute = routeCollection.getStatusErrorRoute(statusCode);
@@ -296,16 +269,72 @@ export default class Dispatcher {
   }
 
   /**
-   * This will validate each part
-   * @param  {array} uri      Uri path as array items
-   * @param  {string} value   Pattern value to validate part againts
-   * @return {array|false}    Will return each valid part as array items
+   * Match one route pattern against the URI parts, segment by segment
+   * @param  {string} pattern  The route pattern
+   * @param  {array}  uri      The URI split on "/"
+   * @return {object} { hasError, path, vars }: hasError when a required segment does not match
    */
-  #validateParts(uri, value) {
-    const inst = this;
+  #matchRoute(pattern, uri) {
+    const segments = this.#compilePattern(pattern);
+    const vars = {};
+    let path = [];
+    let parts = uri;
+
+    for (let x = 0; x < segments.length; x++) {
+      const segment = segments[x];
+      if (segment.isPattern && segment.regex === null) {
+        // A pattern in braces that is not a valid regular expression throws once a dispatch reaches it
+        this.#segmentRegex(segment.value, { throwInvalid: true });
+      }
+      const part = this.#validateParts(parts, segment);
+      if (part) {
+        if (part[0]) {
+          // A named pattern keys its value by name; anything else by its position after the leading slash
+          const position = (x - 1);
+          const key = (segment.name ?? (position < 0 ? 0 : position));
+          vars[key] = part;
+        }
+        path = path.concat(part);
+        parts = parts.slice(part.length);
+      } else if (segment.isRequired) {
+        return { hasError: true, path, vars };
+      }
+    }
+    return { hasError: false, path, vars };
+  }
+
+  /**
+   * Split a route pattern into its segments, once per pattern
+   * @param  {string} pattern
+   * @return {array} [{ isPattern, name, value, regex, isRequired }] for each segment
+   */
+  #compilePattern(pattern) {
+    if (!this.#compiledPatterns.has(pattern)) {
+      const segments = this.#escapeForwardSlash(pattern).split('/').map((segment) => {
+        const { isPattern, name, value } = this.#getMatchPattern(segment);
+        return {
+          isPattern,
+          name,
+          value: isPattern ? value : segment,
+          regex: this.#segmentRegex(isPattern ? value : segment),
+          isRequired: this.#isLossyParam(segment),
+        };
+      });
+      this.#compiledPatterns.set(pattern, segments);
+    }
+    return this.#compiledPatterns.get(pattern);
+  }
+
+  /**
+   * This will validate each part
+   * @param  {array} uri        Uri path as array items
+   * @param  {object} segment   Compiled pattern segment to validate the parts against
+   * @return {array|false}      Will return each valid part as array items
+   */
+  #validateParts(uri, segment) {
+    const { regex, value } = segment;
     const uriParts = [];
     let hasError = false;
-    const regex = this.#segmentRegex(value);
     if (regex === null) {
       return false;
     }
@@ -315,7 +344,7 @@ export default class Dispatcher {
         hasError = true;
         break;
       }
-      uriParts.push(inst.htmlspecialchars(part));
+      uriParts.push(this.htmlspecialchars(part));
       const join = uriParts.join('/');
       if (join.match(regex)) {
         if (value !== '.+') return uriParts;
@@ -347,14 +376,16 @@ export default class Dispatcher {
    * Build the regular expression for one route segment.
    * Literal segments are used as regular expressions too, so a literal such as "c++" is not
    * a valid one. Such a segment matches nothing instead of breaking every dispatch (audit F5).
-   * @param  {string} value  Segment pattern
+   * @param  {string}  value              Segment pattern
+   * @param  {object}  options
+   * @param  {boolean} options.throwInvalid  Throw the SyntaxError instead of returning null
    * @return {RegExp|null}   Null when the pattern is not a valid regular expression
    */
-  #segmentRegex(value) {
+  #segmentRegex(value, { throwInvalid = false } = {}) {
     try {
       return new RegExp(`^${value}$`);
     } catch (error) {
-      if (error instanceof SyntaxError) {
+      if (error instanceof SyntaxError && !throwInvalid) {
         return null;
       }
       throw error;
@@ -480,9 +511,9 @@ export default class Dispatcher {
   }
 
   /**
-   * Build and return patterns
-   * @param  {string} matchStr
-   * @return {array}
+   * Read the first {name:pattern} or {pattern} in a route segment
+   * @param  {string} matchStr  One segment of a route pattern
+   * @return {object} { isPattern, name, value }; name is '' for an unnamed pattern, undefined for a literal
    */
   #getMatchPattern(matchStr) {
     const matchPatter = matchStr.match(/{(.*?)}/g);
@@ -491,10 +522,13 @@ export default class Dispatcher {
       const extractPattern = patterns[0].split(':');
       const length = extractPattern.length - 1;
       const patternValue = this.#unescapeForwardSlash(extractPattern[length].trim());
-      const regex = new RegExp(`^${patternValue}$`);
-      return [regex, ((extractPattern.length > 1) ? extractPattern[0].trim() : ''), patternValue];
+      return {
+        isPattern: true,
+        name: ((extractPattern.length > 1) ? extractPattern[0].trim() : ''),
+        value: patternValue,
+      };
     }
-    return [];
+    return { isPattern: false };
   }
 
   /**
