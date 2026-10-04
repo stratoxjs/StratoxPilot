@@ -8,7 +8,9 @@ export default class Router {
 
   #router = [];
 
-  #protocol = {};
+  // Backs only the duplicate-pattern check: the latest { pattern: controller } for each list of verbs.
+  // The check is narrow on purpose until the next major (audit F1, pilot Group C).
+  #latestPatternByVerbs = {};
 
   /**
      * Return the router data
@@ -36,7 +38,8 @@ export default class Router {
     if (typeof pattern !== 'string') {
       throw new Error('Argument 2 (pattern) needs to be a string.');
     }
-    if (typeof this.#protocol?.[verb]?.[pattern] === 'string') {
+    // Checked before the verbs are upper-cased, so "get" is not compared with "GET"
+    if (typeof this.#latestPatternByVerbs[verb]?.[pattern] === 'string') {
       throw new Error(`Argument 2 (pattern: ${pattern}) already exists.`);
     }
 
@@ -47,7 +50,7 @@ export default class Router {
       controller,
       config: (config ?? {}),
     });
-    this.#protocol[verbs] = { [pattern]: controller };
+    this.#latestPatternByVerbs[verbs] = { [pattern]: controller };
   }
 
   /**
