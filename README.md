@@ -76,6 +76,7 @@ The dispatcher offers several configuration options to tailor its behavior to yo
 ```javascript
 const dispatcher = new Dispatcher({
     catchForms: false, // Toggle form submission catching
+    catchLinks: false, // Toggle link click catching
     root: "", // Set a root directory
     fragmentPrefix: "" // Define a prefix for hash/fragment navigation
 });
@@ -83,6 +84,7 @@ const dispatcher = new Dispatcher({
 
 ### Configuration Parameters
 - **catchForms (bool):** When set to `true`, enables the dispatcher to automatically intercept and route form submissions. This feature facilitates seamless integration of form-based navigation within your application.
+- **catchLinks (bool):** When set to `true`, a click on a link to the same site is routed through `navigateTo()` instead of loading a new page. Links with a `target` other than `_self`, a `download` attribute or a `data-pilot-ignore` attribute, links to other sites, in-page anchors (`#section`) and clicks with Ctrl, Cmd, Shift or Alt are left to the browser. See "Link navigation" below.
 - **root (string):** This parameter allows you to specify a root directory using an **absolute path**. This setting is crucial for defining where simulated or "pretty" URI paths begin. The necessity of this configuration depends on your specific deployment environment.
 - **fragmentPrefix (string):** This option lets you prepend a prefix to fragment or hash navigation calls. For instance, adding the "!" character means the URL's hash will be expected to appear as "#!your-hash", modifying the default behavior to accommodate specific routing schemes or to enhance compatibility with certain browsers or frameworks.
 
@@ -318,6 +320,23 @@ router.post('/post/contact', function(vars, request, path) {
     const lastname = request.post.lastname;
     console.log(`The post request, first name: ${firstname}, last name: ${lastname}`);
 });
+```
+
+## Link navigation
+
+With `catchLinks: true`, ordinary links navigate through the dispatcher, so you do not need your own click handler:
+
+```javascript
+const dispatcher = new Dispatcher({
+    catchLinks: true
+});
+```
+
+```html
+<a href="/about">About</a>                        <!-- routed, no page load -->
+<a href="/search?q=sofa">Search</a>               <!-- routed; request.get has q=sofa -->
+<a href="/report.pdf" download>Report</a>         <!-- left to the browser -->
+<a href="/legacy" data-pilot-ignore>Old page</a>   <!-- left to the browser -->
 ```
 
 ## Form submission

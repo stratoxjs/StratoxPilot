@@ -4,7 +4,7 @@ import {
 import { Router, Dispatcher } from '../../src/index';
 
 // Roadmap 2.13: critical paths in real browsers (Chromium, Firefox, WebKit), run with
-// `npm run test:browser`: back and forward through the history, and form catching.
+// `npm run test:browser`: back and forward through the history, and form and link catching.
 // The dispatcher matches request('path'), so the routes do not depend on the URL of
 // the test frame. pushState changes that URL; it is restored after the file.
 
@@ -59,7 +59,7 @@ beforeAll(() => {
   router.get('/about', 'about');
   router.get('/search', 'search');
   router.post('/contact', 'contact');
-  dispatcher = new Dispatcher({ catchForms: true });
+  dispatcher = new Dispatcher({ catchForms: true, catchLinks: true });
   dispatcher.dispatcher(router, dispatcher.request('path'), (response) => {
     responses.push(response);
   });
@@ -156,6 +156,54 @@ describe('form catching', () => {
 
   test('a form for another site is not caught (audit pilot F16)', () => {
     expect(submit('external')).toBe(false);
+    expect(responses).toEqual([]);
+  });
+});
+
+/**
+ * Click a link the way a user does and report whether pilot took the click. A window
+ * listener runs after pilot's document listener; it records the result and then cancels
+ * the click, so the test page never navigates.
+ * @param  {string} id      link id
+ * @param  {object} options MouseEvent options, e.g. { ctrlKey: true }
+ * @return {boolean} true when pilot caught the click
+ */
+function clickLink(id, options = {}) {
+  let caught;
+  const guard = (event) => {
+    caught = event.defaultPrevented;
+    event.preventDefault();
+  };
+  window.addEventListener('click', guard);
+  document.getElementById(id).dispatchEvent(new MouseEvent('click', {
+    bubbles: true, cancelable: true, button: 0, ...options,
+  }));
+  window.removeEventListener('click', guard);
+  return caught;
+}
+
+describe('link catching (D-047)', () => {
+  beforeEach(() => {
+    document.body.innerHTML = `
+      <a id="search" href="/search?q=lamp"><span id="inside">Search</span></a>
+      <a id="blank" href="/about" target="_blank">New tab</a>
+      <a id="external" href="https://other.example/about">Other site</a>`;
+  });
+
+  test('a same-origin link, also clicked on an element inside it, is dispatched with its query', () => {
+    expect(clickLink('inside')).toBe(true);
+
+    const { controller, request } = responses.at(-1);
+    expect(controller).toBe('search');
+    expect(request.get.get('q')).toBe('lamp');
+    expect(window.location.pathname).toBe('/search');
+  });
+
+  test('a modifier key, target="_blank" and another origin are left to the browser', () => {
+    expect(clickLink('search', { ctrlKey: true })).toBe(false);
+    expect(clickLink('search', { metaKey: true })).toBe(false);
+    expect(clickLink('blank')).toBe(false);
+    expect(clickLink('external')).toBe(false);
     expect(responses).toEqual([]);
   });
 });
