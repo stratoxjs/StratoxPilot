@@ -222,47 +222,17 @@ export default class Dispatcher {
   validateDispatch(routeCollection, method, dipatch) {
     const router = this.getRouterData(routeCollection);
     const uri = dipatch.split('/');
-    // The result of the last route tried; empty when there is no route
-    let match = { hasError: false, path: [], vars: {} };
-    let current;
-    let fallback;
-    let statusError = 404;
-
-    for (let i = 0; i < router.length; i++) {
-      match = { hasError: false, path: [], vars: {} };
-      if (router[i].verb.includes(method)) {
-        match = this.#matchRoute(router[i].pattern, uri);
-        if (!match.hasError) {
-          if (!fallback) {
-            fallback = router[i];
-          }
-          if (uri.length === match.path.length) {
-            current = router[i];
-            break;
-          }
-        }
-      } else if (method !== 'GET') {
-        statusError = 405;
-      }
-    }
-
-    if (typeof current !== 'object') {
-      current = (typeof fallback === 'object') ? fallback : {};
-    }
-
-    const { hasError, path, vars } = match;
-    const statusCode = (!hasError && (uri.length === path.length) ? 200 : statusError);
-    const filterPath = [...path].filter((val) => (val !== ''));
-    const errorRoute = routeCollection.getStatusErrorRoute(statusCode);
-    const route = errorRoute || current;
+    const found = this.#findRoute(router, method, uri);
+    const errorRoute = routeCollection.getStatusErrorRoute(found.status);
+    const route = errorRoute || found.route;
 
     return {
       verb: method,
-      status: statusCode,
+      status: found.status,
       controller: route?.controller ?? null,
       config: route?.config ?? null,
-      path: filterPath,
-      vars,
+      path: found.path,
+      vars: found.vars,
       request: {
         get: this.#state?.request?.get,
         post: this.#state?.request?.post,
@@ -271,12 +241,48 @@ export default class Dispatcher {
   }
 
   /**
+   * Find the route for a request, by one rule (D-048): the first route, in the order they were
+   * registered, that matches the whole path and accepts the method gives 200. Otherwise 405 when a
+   * route for another method matches the whole path, else 404. A route that matches only part of
+   * the path never counts (audit F3).
+   * @param  {array}  router  The routes
+   * @param  {string} method  The request method
+   * @param  {array}  uri     The URI split on "/"
+   * @return {object} { status, route, path, vars }: route, path and vars are empty unless 200
+   */
+  #findRoute(router, method, uri) {
+    let otherMethodMatches = false;
+    for (const route of router) {
+      if (route.pattern === '[STATUS_ERROR]') {
+        continue;
+      }
+      const acceptsMethod = route.verb.includes(method);
+      // A broken pattern throws only for a route this request could use (guard, roadmap 4.1)
+      const match = this.#matchRoute(route.pattern, uri, acceptsMethod);
+      if (match.hasError || match.path.length !== uri.length) {
+        continue;
+      }
+      if (acceptsMethod) {
+        const path = match.path.filter((part) => part !== '');
+        return {
+          status: 200, route, path, vars: match.vars,
+        };
+      }
+      otherMethodMatches = true;
+    }
+    return {
+      status: otherMethodMatches ? 405 : 404, route: null, path: [], vars: {},
+    };
+  }
+
+  /**
    * Match one route pattern against the URI parts, segment by segment
    * @param  {string} pattern  The route pattern
    * @param  {array}  uri      The URI split on "/"
+   * @param  {boolean} throwInvalid  Throw for a pattern in braces that is not a valid regex
    * @return {object} { hasError, path, vars }: hasError when a required segment does not match
    */
-  #matchRoute(pattern, uri) {
+  #matchRoute(pattern, uri, throwInvalid = true) {
     const segments = this.#compilePattern(pattern);
     const vars = {};
     let path = [];
@@ -284,7 +290,7 @@ export default class Dispatcher {
 
     for (let x = 0; x < segments.length; x++) {
       const segment = segments[x];
-      if (segment.isPattern && segment.regex === null) {
+      if (throwInvalid && segment.isPattern && segment.regex === null) {
         // A pattern in braces that is not a valid regular expression throws once a dispatch reaches it
         this.#segmentRegex(segment.value, { throwInvalid: true });
       }
@@ -314,11 +320,12 @@ export default class Dispatcher {
     if (!this.#compiledPatterns.has(pattern)) {
       const segments = this.#escapeForwardSlash(pattern).split('/').map((segment) => {
         const { isPattern, name, value } = this.#getMatchPattern(segment);
+        // Only a pattern in braces is a regular expression; a literal matches its own text (D-048)
         return {
           isPattern,
           name,
           value: isPattern ? value : segment,
-          regex: this.#segmentRegex(isPattern ? value : segment),
+          regex: isPattern ? this.#segmentRegex(value) : undefined,
           isRequired: this.#isLossyParam(segment),
         };
       });
@@ -337,6 +344,9 @@ export default class Dispatcher {
     const { regex, value } = segment;
     const uriParts = [];
     let hasError = false;
+    if (!segment.isPattern) {
+      return this.#matchLiteral(uri, value);
+    }
     if (regex === null) {
       return false;
     }
@@ -354,8 +364,23 @@ export default class Dispatcher {
         hasError = true;
       }
     }
-    if (!hasError && value === '.+') return uriParts;
+    // A catch-all needs at least one part (audit F20)
+    if (!hasError && value === '.+' && uriParts.length > 0) return uriParts;
     return false;
+  }
+
+  /**
+   * A literal segment matches one URI part with exactly its text, after percent-decoding (D-048)
+   * @param  {array}  uri      Uri path as array items
+   * @param  {string} literal  The segment as written in the route
+   * @return {array|false}     The part, HTML-escaped like every matched part, or false
+   */
+  #matchLiteral(uri, literal) {
+    if (uri.length === 0) {
+      return false;
+    }
+    const part = this.#decodePart(uri[0]);
+    return (part === literal) ? [this.htmlspecialchars(part)] : false;
   }
 
   /**
