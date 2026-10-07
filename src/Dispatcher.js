@@ -29,6 +29,7 @@ export default class Dispatcher {
   constructor(configs = {}) {
     this.#configs = {
       catchForms: false, // Auto catch forms
+      catchLinks: false, // Auto catch same-origin link clicks (D-047)
       fragmentPrefix: '', // Prefix hash fragment
       server: {},
       root: '',
@@ -169,6 +170,7 @@ export default class Dispatcher {
     const inst = this;
     // if(routeCollection.hasPostRoutes())
     this.#catchFormEvents();
+    this.#catchLinkEvents();
     this.#handler.on('popstate', (eventArg) => {
       const event = eventArg;
       event.details.request.get = inst.buildQueryObj(event.details.request.get);
@@ -477,6 +479,46 @@ export default class Dispatcher {
         }
       });
     }
+  }
+
+  /**
+   * With catchLinks, a click on a same-origin link navigates through the dispatcher (D-047)
+   * @return {void}
+   */
+  #catchLinkEvents() {
+    if (!this.#configs.catchLinks || (typeof document !== 'object')) {
+      return;
+    }
+    document.addEventListener('click', (event) => {
+      const link = event.target?.closest?.('a[href]');
+      if (!link || !this.#isLinkForUs(event, link)) {
+        return;
+      }
+      event.preventDefault();
+      const url = new URL(link.href);
+      this.navigateTo(url, this.#paramsToObj(url.search));
+    });
+  }
+
+  /**
+   * Should the dispatcher take this link click, or leave it to the browser?
+   * @param  {MouseEvent}        event
+   * @param  {HTMLAnchorElement} link
+   * @return {boolean}
+   */
+  #isLinkForUs(event, link) {
+    // Another handler took it, or the user asks for a new tab, window or a download
+    if (event.defaultPrevented || event.button !== 0) return false;
+    if (event.ctrlKey || event.metaKey || event.shiftKey || event.altKey) return false;
+    const target = link.getAttribute('target');
+    if ((target && target !== '_self') || link.hasAttribute('download')) return false;
+    if (link.hasAttribute('data-pilot-ignore')) return false;
+
+    const url = new URL(link.href);
+    if (url.origin !== window.location.origin) return false;
+    // Only the hash differs: an anchor on this page
+    const samePage = (url.pathname === window.location.pathname && url.search === window.location.search);
+    return !(samePage && url.hash !== '');
   }
 
   /**
