@@ -33,26 +33,26 @@ router.get('/', function() {
 
 // GET: example.se/#about 
 // REGULAR URI paths (example.se/about) are of course also supported!
-router.get('/about', function(vars, request, path) {
-    const page = vars[0].pop();
+router.get('/about', function(params, request, path) {
+    const page = params[0];
     console.log(`The current page is: ${page}`);
 });
 
 // GET: example.se/#articles/824/hello-world
-router.get('/articles/{id:[0-9]+}/{slug:[^/]+}', function(vars, request, path) {
-    const id = vars.id.pop();
-    const slug = vars.slug.pop();
+router.get('/articles/{id:[0-9]+}/{slug:[^/]+}', function(params, request, path) {
+    const id = params.id;
+    const slug = params.slug;
     console.log(`Article post ID is: ${id} and post slug is: ${slug}.`);
 });
 
 // POST: example.se/#post/contact
-router.post('/post/contact', function(vars, request, path) {
+router.post('/post/contact', function(params, request, path) {
     console.log(`Contact form catched with post:`, request.post);
 });
 
 // Will catch 404 and 405 HTTP Status Errors codes
 // Not required you can also handle it directly in the dispatcher
-router.get('[STATUS_ERROR]', function(vars, request, path, statusCode) {
+router.get('[STATUS_ERROR]', function(params, request, path, statusCode) {
     if(statusCode === 404) {
         console.log("404 Page not found", statusCode);
     } else {
@@ -63,7 +63,7 @@ router.get('[STATUS_ERROR]', function(vars, request, path, statusCode) {
 dispatcher.dispatcher(router, dispatcher.serverParams("fragment"), function(response, statusCode) {
     // response.controller is equal to what the routers second argument is being fed with.
     // You can add Ajax here if you wish to trigger a ajax call.
-    response.controller(response.vars, response.request, response.path, statusCode);
+    response.controller(response.params, response.request, response.path, statusCode);
 });
 // URI HASH: dispatcher.serverParams("fragment") // Fragment is HASH without "#" character.
 // URI PATH: dispatcher.serverParams("path") // Regular URI path
@@ -101,13 +101,13 @@ router.post(string pattern, mixed call);
 ### A really Basic example
 ```javascript
 // Possible path: #about
-router.get('/about', function(vars, request, path) {
+router.get('/about', function(params, request, path) {
 });
 ```
 And you can of course **add multiple** paths.
 ```javascript
 // Possible path: #about/contact
-router.get('/about/contact', function(vars, request, path) {
+router.get('/about/contact', function(params, request, path) {
 });
 ```
 
@@ -115,33 +115,32 @@ router.get('/about/contact', function(vars, request, path) {
 To incorporate regular expressions in routing patterns, enclose the expression within **curly brackets: `{PATTERN}`**. This syntax allows for flexible and powerful URL matching based on specified patterns.
 ```javascript
 // Possible path: #about/location/stockholm
-router.get('/about/location/{[a-z]+}', function(vars, request, path) {
+router.get('/about/location/{[a-z]+}', function(params, request, path) {
 });
 ```
 ### Binding Router Patterns to a Key
 It is strongly advised to associate each URI path you wish to access with a specific **key**. This approach enhances the clarity and manageability of your route definitions.
 ```javascript
 // Possible path: #about/location/stockholm
-router.get('/{page:about}/location/{city:[^/]+}', function(vars, request, path) {
-    //vars.page[0] is expected to be "about"
-    //vars.city[0] is expected to be any string value (stockholm, denmark, new-york) from passed URI.
+router.get('/{page:about}/location/{city:[^/]+}', function(params, request, path) {
+    // params.page is "about"
+    // params.city is any value from the URI (stockholm, denmark, new-york)
 });
 ```
 You can also map an entire path to a **key**, allowing for more concise and organized route management.
 ```javascript
 // Possible path: #about/contact
-router.get('/{page:about/location}', function(vars, request, path) {
-    //vars.page[0] is expected to be "about"
-    //vars.page[1] is expected to be "location"
+router.get('/{page:about/location}', function(params, request, path) {
+    // params.page is "about/location"
 });
 ```
 ### Combining pattern with keywords
 Combining patterns with keywords e.g. (**post-**[0-9]+) enables you to create more expressive and versatile route definitions.
 ```javascript
 // Possible path: #articles/post-824/hello-world
-router.get('/articles/{id:post-[0-9]+}/{slug:[^/]+}', function(vars, request, path) {
-    //vars.id[0] is expected to be "post-824"
-    //vars.slug[0] is expected to be "hello-world"
+router.get('/articles/{id:post-[0-9]+}/{slug:[^/]+}', function(params, request, path) {
+    // params.id is "post-824"
+    // params.slug is "hello-world"
 });
 ```
 
@@ -151,7 +150,7 @@ One rule decides which route handles a request:
 
 1. Routes are tried in the order you registered them. The **first** route that matches the **whole** path and accepts the request method wins (status 200).
 2. If no route does, but a route for another method matches the whole path, the status is **405**. Otherwise it is **404**.
-3. On 404 and 405 the controller is your `[STATUS_ERROR]` route's, or `null`. A route that matched only the start of the path is never used, and `path` and `vars` are empty.
+3. On 404 and 405 the controller is your `[STATUS_ERROR]` route's, or `null`. A route that matched only the start of the path is never used, and `path`, `params` and `vars` are empty.
 4. Text outside curly brackets matches **exactly** (after URL decoding): `/file.txt` matches only `/file.txt`, and `/c++` only `/c++`. Only `{...}` is a regular expression.
 5. A catch-all `{name:.+}` needs at least one segment: `/shop/{category:.+}` does not match `/shop`. Register `/shop` on its own if you want both.
 
@@ -169,9 +168,9 @@ To accommodate an unlimited number of nested paths within your routing configura
 ```javascript
 // Example of accessing a single category: #shop/furniture
 // Example of accessing multiple nested categories: #shop/furniture/sofas/chesterfield
-router.get('/shop/{category:.+}', function(vars, request, path) {
-    // Retrieves the last category segment from the path
-    const category = vars.category.pop();
+router.get('/shop/{category:.+}', function(params, request, path) {
+    // params.category is "furniture" or "furniture/sofas/chesterfield"; the last part is the current category
+    const category = params.category.split('/').pop();
     console.log(`The current category is: ${category}`);
 });
 ```
@@ -183,7 +182,7 @@ To define one or more optional URI paths, enclose the path segment (excluding th
 ```javascript
 // Possible path: #articles
 // Possible path: #articles/post-824/hello-world
-router.get('/articles/({id:post-[0-9]+})?/({slug:[^/]+})?', function(vars, request, path) {
+router.get('/articles/({id:post-[0-9]+})?/({slug:[^/]+})?', function(params, request, path) {
 });
 ```
 It's important to note that you should not enclose the **leading slash** in brackets. The leading slash is automatically excluded from the pattern, ensuring the correct interpretation of the route.
@@ -191,7 +190,7 @@ It's important to note that you should not enclose the **leading slash** in brac
 ### Catch status errors
 There is an optional and special router pattern that let's you catch HTTP Status Errors with in a router.
 ```javascript
-router.get('[STATUS_ERROR]', function(vars, request, path, statusCode) {
+router.get('[STATUS_ERROR]', function(params, request, path, statusCode) {
     if(statusCode === 404) {
         console.log("404 Page not found", statusCode);
     } else {
@@ -248,7 +247,7 @@ The "dispatch" argument expects a callable function to process the match result,
 Below is an excerpt from the example at the start of the guide:
 ```javascript
 dispatcher.dispatcher(router, dispatcher.serverParams("fragment"), function(response, statusCode) {
-    response.controller(response.vars, response.request, response.path, statusCode);
+    response.controller(response.params, response.request, response.path, statusCode);
 });
 ```
 
@@ -260,10 +259,15 @@ The response structure, as illustrated with the router pattern `"/{page:product}
     "verb": "GET",
     "status": 200,
     "path": ["product", "72", "chesterfield"],
-    "vars": {
+    "params": {
         "page": "product",
         "id": "72",
         "slug": "chesterfield"
+    },
+    "vars": {
+        "page": ["product"],
+        "id": ["72"],
+        "slug": ["chesterfield"]
     },
     "form": {},
     "fromHistory": false,
@@ -276,7 +280,12 @@ The response structure, as illustrated with the router pattern `"/{page:product}
 - **verb:** The HTTP method (GET or POST).
 - **status:** The HTTP status code (200, 404, or 405).
 - **path:** The URI path as an array.
-- **vars:** An object mapping path segments to keys.
+- **params:** The matched parts by key, each one plain string: URL-decoded and not HTML-escaped, so escape it when you
+  write it into HTML (stratox does this by default). A part that spans several segments, such as a catch-all, is joined
+  with `/`. Unnamed `{regex}` parts and plain segments are keyed by position: `params[0]` is the first segment. Empty
+  on 404 and 405.
+- **vars:** The older form of `params`, kept for existing code: each value is an array of the matched segments,
+  HTML-escaped (`&` becomes `&amp;`); unnamed `{regex}` parts are keyed `""`. Prefer `params`.
 - **form:** Captures submitted DOM form elements.
 - **fromHistory:** `true` when the browser fired the dispatch with its own popstate event: Back, Forward, or a link
   that only changes the hash. Back or Forward to a page reached by `postTo`, `putTo` or a caught form dispatches that
@@ -309,9 +318,9 @@ dispatcher.navigateTo("#articles/824/hello-world", { test: "A get request" });
 The above navigation will trigger the result for the matching router:
 ```javascript
 // GET: example.se/?test=A+get+request#articles/824/hello-world
-router.get('/articles/{id:[0-9]+}/{slug:[^/]+}', function(vars, request, path) {
-    const id = vars.id.pop();
-    const slug = vars.slug.pop();
+router.get('/articles/{id:[0-9]+}/{slug:[^/]+}', function(params, request, path) {
+    const id = params.id;
+    const slug = params.slug;
     const test = request.get.get("test"); // Get the query string/get request "test"
     console.log(`Article ID: ${id}, Slug: ${slug} and GET Request ${test}.`);
 });
@@ -332,7 +341,7 @@ dispatcher.postTo("#post/contact", { firstname: "John", lastname: "Doe" });
 The above post will trigger the result for the matching router:
 ```javascript
 // POST: example.se/#post/contact
-router.post('/post/contact', function(vars, request, path) {
+router.post('/post/contact', function(params, request, path) {
     const firstname = request.post.firstname;
     const lastname = request.post.lastname;
     console.log(`The post request, first name: ${firstname}, last name: ${lastname}`);
@@ -374,7 +383,7 @@ Next, define the routes that will handle form submissions. For example, to handl
 
 ```javascript
 // POST: example.se/#post/contact
-router.post('/post/contact', function(vars, request, path) {
+router.post('/post/contact', function(params, request, path) {
     console.log('Contact form posted with form request:', request.post);
 });
 ```

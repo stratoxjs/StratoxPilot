@@ -170,14 +170,13 @@ describe('request and serverParams', () => {
     expect(String(dispatcher.request('path')())).toBe('/');
   });
 
-  test('request(key)() returns a String object, not a string (audit pilot F10)', () => {
+  test('request(key)() returns a plain string (audit pilot F10, fixed, D-049)', () => {
     const { dispatcher } = startDispatcher();
     dispatcher.navigateTo('/about');
 
     const path = dispatcher.request('path')();
-    expect(typeof path).toBe('object');
-    expect(path).toBeInstanceOf(String);
-    expect(String(path)).toBe('/about');
+    expect(typeof path).toBe('string');
+    expect(path === '/about').toBe(true);
   });
 
   test('serverParams() without a window has empty location values', () => {
@@ -197,11 +196,17 @@ describe('request and serverParams', () => {
     expect(dispatcher.serverParams()).toMatchObject({ path: '/custom', extra: 1, fragment: '/' });
   });
 
-  test('serverParams(key)() returns a String object, not a string (audit pilot F10)', () => {
+  test('serverParams(key)() returns a plain string (audit pilot F10, fixed, D-049)', () => {
     const path = new Dispatcher().serverParams('path')();
 
-    expect(path).toBeInstanceOf(String);
-    expect(String(path)).toBe('/');
+    expect(typeof path).toBe('string');
+    expect(path === '/').toBe(true);
+  });
+
+  test('serverParams(key, obj)() still merges obj into an object value', () => {
+    const dispatcher = new Dispatcher({ server: { query: { a: '1' } } });
+
+    expect(dispatcher.serverParams('query', { b: '2' })()).toEqual({ a: '1', b: '2' });
   });
 });
 

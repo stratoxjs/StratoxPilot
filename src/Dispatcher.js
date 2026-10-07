@@ -123,7 +123,7 @@ export default class Dispatcher {
   serverParams(key, obj) {
     if (typeof key === 'string') {
       const inst = this;
-      return () => Object.assign(inst.#handler.getState().server[key], obj);
+      return () => inst.#valueOrMerged(inst.#handler.getState().server[key], obj);
     }
     return this.#handler.getState().server;
   }
@@ -137,9 +137,20 @@ export default class Dispatcher {
   request(key, obj) {
     if (typeof key === 'string') {
       const inst = this;
-      return () => Object.assign((inst.#state.request?.[key] ?? '/'), obj);
+      return () => inst.#valueOrMerged((inst.#state.request?.[key] ?? '/'), obj);
     }
     return this.#state.request;
+  }
+
+  /**
+   * A string as it is; an object with obj merged into it. Object.assign on a string would
+   * return a String object, which is not === to a string (audit F10, D-049).
+   * @param  {mixed}  value
+   * @param  {object} obj
+   * @return {mixed}
+   */
+  #valueOrMerged(value, obj) {
+    return (typeof value === 'string') ? value : Object.assign(value, obj);
   }
 
   /**
@@ -209,11 +220,8 @@ export default class Dispatcher {
   }
 
   /**
-   * Validate dispatch: find the route for a verb and a URI.
-   * The routes are tried in order. The first one that matches the whole URI wins. Otherwise the first one
-   * that matched its own segments is the fallback, returned with the error status: 404, or 405 when the
-   * verb is not GET and a route tried does not accept it. The status, path and vars come from the last
-   * route tried (audit F21).
+   * Validate dispatch: find the route for a verb and a URI by one rule (see #findRoute(), D-048).
+   * On 404 and 405 the controller is the [STATUS_ERROR] route's, or null.
    * @param  {Router|array} routeCollection
    * @param  {string} method  Verb (GET, POST)
    * @param  {uri} dipatch    The uri/hash to validate
@@ -233,6 +241,7 @@ export default class Dispatcher {
       config: route?.config ?? null,
       path: found.path,
       vars: found.vars,
+      params: found.params,
       request: {
         get: this.#state?.request?.get,
         post: this.#state?.request?.post,
@@ -248,7 +257,7 @@ export default class Dispatcher {
    * @param  {array}  router  The routes
    * @param  {string} method  The request method
    * @param  {array}  uri     The URI split on "/"
-   * @return {object} { status, route, path, vars }: route, path and vars are empty unless 200
+   * @return {object} { status, route, path, vars, params }: all empty unless 200
    */
   #findRoute(router, method, uri) {
     let otherMethodMatches = false;
@@ -265,13 +274,13 @@ export default class Dispatcher {
       if (acceptsMethod) {
         const path = match.path.filter((part) => part !== '');
         return {
-          status: 200, route, path, vars: match.vars,
+          status: 200, route, path, vars: match.vars, params: match.params,
         };
       }
       otherMethodMatches = true;
     }
     return {
-      status: otherMethodMatches ? 405 : 404, route: null, path: [], vars: {},
+      status: otherMethodMatches ? 405 : 404, route: null, path: [], vars: {}, params: {},
     };
   }
 
@@ -280,11 +289,12 @@ export default class Dispatcher {
    * @param  {string} pattern  The route pattern
    * @param  {array}  uri      The URI split on "/"
    * @param  {boolean} throwInvalid  Throw for a pattern in braces that is not a valid regex
-   * @return {object} { hasError, path, vars }: hasError when a required segment does not match
+   * @return {object} { hasError, path, vars, params }: hasError when a required segment does not match
    */
   #matchRoute(pattern, uri, throwInvalid = true) {
     const segments = this.#compilePattern(pattern);
     const vars = {};
+    const params = {};
     let path = [];
     let parts = uri;
 
@@ -298,17 +308,23 @@ export default class Dispatcher {
       if (part) {
         if (part[0]) {
           // A named pattern keys its value by name; anything else by its position after the leading slash
-          const position = (x - 1);
-          const key = (segment.name ?? (position < 0 ? 0 : position));
-          vars[key] = part;
+          const position = (x - 1) < 0 ? 0 : (x - 1);
+          vars[segment.name ?? position] = part;
+          // params: the same parts as plain text, decoded and joined; an unnamed regex by position (D-049)
+          const text = parts.slice(0, part.length).map((uriPart) => this.#decodePart(uriPart)).join('/');
+          params[segment.name || position] = text;
         }
         path = path.concat(part);
         parts = parts.slice(part.length);
       } else if (segment.isRequired) {
-        return { hasError: true, path, vars };
+        return {
+          hasError: true, path, vars, params,
+        };
       }
     }
-    return { hasError: false, path, vars };
+    return {
+      hasError: false, path, vars, params,
+    };
   }
 
   /**
@@ -638,6 +654,7 @@ export default class Dispatcher {
       controller: null,
       path: [],
       vars: {},
+      params: {},
       form: this.#form,
       fromHistory: false,
       request: {
