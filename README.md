@@ -95,7 +95,7 @@ router.get(string pattern, mixed call);
 router.post(string pattern, mixed call);
 ```
 #### Arguments
-* **pattern (string):** This parameter expects a URI path in the form of a string, which may include regular expressions for more complex matching criteria.
+* **pattern (string):** This parameter expects a URI path in the form of a string. Regular expressions go inside curly brackets, `{...}`; everything else matches as written (see "How routes match").
 * **call (mixed):** This parameter can accept any data type, such as a callable, anonymous function, string, number, or boolean. However, it is most common to use a function. For the purposes of this guide, I use a regular callable function in my examples.
 
 ### A really Basic example
@@ -145,6 +145,23 @@ router.get('/articles/{id:post-[0-9]+}/{slug:[^/]+}', function(vars, request, pa
 });
 ```
 
+### How routes match
+
+One rule decides which route handles a request:
+
+1. Routes are tried in the order you registered them. The **first** route that matches the **whole** path and accepts the request method wins (status 200).
+2. If no route does, but a route for another method matches the whole path, the status is **405**. Otherwise it is **404**.
+3. On 404 and 405 the controller is your `[STATUS_ERROR]` route's, or `null`. A route that matched only the start of the path is never used, and `path` and `vars` are empty.
+4. Text outside curly brackets matches **exactly** (after URL decoding): `/file.txt` matches only `/file.txt`, and `/c++` only `/c++`. Only `{...}` is a regular expression.
+5. A catch-all `{name:.+}` needs at least one segment: `/shop/{category:.+}` does not match `/shop`. Register `/shop` on its own if you want both.
+
+Because the first match wins, register specific routes before general ones:
+
+```javascript
+router.get('/about', aboutPage);          // matches /about
+router.get('/{page:[a-z]+}', anyPage);    // matches every other single lowercase word
+```
+
 ### Handling Unlimited Nested Paths
 
 To accommodate an unlimited number of nested paths within your routing configuration, you can utilize the pattern `".+"`. However, it's strongly advised to precede such a router pattern with a specific prefix to maintain clarity and structure, as demonstrated in the example below with the prefix `/shop`.
@@ -159,7 +176,7 @@ router.get('/shop/{category:.+}', function(vars, request, path) {
 });
 ```
 
-This approach allows for the dynamic handling of deeply nested routes under a common parent path, offering flexibility in how URLs are structured and processed.
+This approach allows for the dynamic handling of deeply nested routes under a common parent path, offering flexibility in how URLs are structured and processed. The catch-all needs at least one segment, so `#shop` on its own is a 404 unless you also register `/shop`.
 
 ### Optional URI Paths
 To define one or more optional URI paths, enclose the path segment (excluding the slash) in brackets followed by a question mark, for example: **/(PATH_NAME)?**. This syntax allows for flexibility in route matching by making certain path segments non-mandatory.

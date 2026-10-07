@@ -24,38 +24,27 @@ describe('404 Not Found', () => {
     expect(result.config).toBeNull();
   });
 
-  test('returns the partially matched controller when there is no error route (audit pilot F3)', () => {
+  test('never returns a route that matched only part of the path (audit pilot F3, fixed, D-048)', () => {
     const router = new Router();
     router.get('/about', 'about');
 
     const result = dispatch(router, 'GET', '/about/extra');
-
-    expect(result.status).toBe(404);
-    expect(result.controller).toBe('about');
-    expect(result.config).toEqual({});
-  });
-
-  test('takes path and vars from the last route tried, not from the returned controller (audit pilot F21)', () => {
-    const router = new Router();
-    router.get('/about', 'about');
-    router.get('/contact', 'contact');
-
-    const result = dispatch(router, 'GET', '/about/extra');
-
-    expect(result.status).toBe(404);
-    expect(result.controller).toBe('about');
-    expect(result.path).toEqual([]);
-    expect(result.vars).toEqual({});
-  });
-
-  test('returns 404, not 405, for a GET request to a POST-only path (audit pilot F12)', () => {
-    const router = new Router();
-    router.post('/form', 'form');
-
-    const result = dispatch(router, 'GET', '/form');
 
     expect(result.status).toBe(404);
     expect(result.controller).toBeNull();
+    expect(result.config).toBeNull();
+  });
+
+  test('has empty path and vars, not those of the last route tried (audit pilot F21, fixed, D-048)', () => {
+    const router = new Router();
+    router.get('/contact', 'contact');
+    router.get('/{page:[a-z]+}', 'page');
+
+    const result = dispatch(router, 'GET', '/about/extra');
+
+    expect(result.status).toBe(404);
+    expect(result.path).toEqual([]);
+    expect(result.vars).toEqual({});
   });
 });
 
@@ -71,15 +60,35 @@ describe('405 Method Not Allowed', () => {
     expect(result.controller).toBeNull();
   });
 
+  test('returns 405 for a GET request to a POST-only path (audit pilot F12, fixed, D-048)', () => {
+    const router = new Router();
+    router.post('/form', 'form');
+
+    const result = dispatch(router, 'GET', '/form');
+
+    expect(result.status).toBe(405);
+    expect(result.controller).toBeNull();
+  });
+
   test.each(['POST', 'PUT', 'DELETE'])(
-    'returns 405 for a %s request to an unknown path when a route does not accept it (audit pilot F12)',
+    'returns 404, not 405, for a %s request to an unknown path (audit pilot F12, fixed, D-048)',
     (method) => {
       const router = new Router();
       router.get('/about', 'about');
 
-      expect(dispatch(router, method, '/missing').status).toBe(405);
+      expect(dispatch(router, method, '/missing').status).toBe(404);
     },
   );
+
+  test('gives a 405 the [STATUS_ERROR] controller too, with empty path and vars (D-048)', () => {
+    const router = new Router();
+    router.post('/form', 'form');
+    router.get('[STATUS_ERROR]', 'error');
+
+    const result = dispatch(router, 'GET', '/form');
+
+    expect([result.status, result.controller, result.path, result.vars]).toEqual([405, 'error', [], {}]);
+  });
 
   test('returns 404 for a POST request to an unknown path when every route accepts POST', () => {
     const router = new Router();
@@ -128,7 +137,7 @@ describe('[STATUS_ERROR] route', () => {
     router.get('/about', 'about');
     router.get('[STATUS_ERROR]', 'error');
 
-    const result = dispatch(router, 'POST', '/missing');
+    const result = dispatch(router, 'POST', '/about');
 
     expect(result.status).toBe(405);
     expect(result.controller).toBe('error');

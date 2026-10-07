@@ -77,14 +77,6 @@ describe('route patterns that match', () => {
       path: ['shop', 'furniture', 'sofas', 'chesterfield'],
       vars: { 0: ['shop'], category: ['furniture', 'sofas', 'chesterfield'] },
     },
-    // A catch-all also matches when nothing follows it; vars then has no key for it.
-    {
-      feature: 'catch-all, no segment (audit pilot F20)',
-      pattern: '/shop/{category:.+}',
-      uri: '/shop',
-      path: ['shop'],
-      vars: { 0: ['shop'] },
-    },
     {
       feature: 'optional segments, both left out',
       pattern: '/articles/({id:post-[0-9]+})?/({slug:[^/]+})?',
@@ -123,8 +115,8 @@ describe('route patterns that match', () => {
   });
 });
 
-// Only the status is asserted here. What else a 404 response contains
-// (audit pilot F3) is covered with the status handling tests (roadmap 2.2).
+// Only the status is asserted here. What else a 404 response contains (D-048) is
+// covered with the status handling tests.
 describe('route patterns that do not match', () => {
   test.each([
     { feature: 'literal segments', pattern: '/about/contact', uri: '/about' },
@@ -138,6 +130,7 @@ describe('route patterns that do not match', () => {
     { feature: 'prefix + regex', pattern: '/articles/{id:post-[0-9]+}/{slug:[^/]+}', uri: '/articles/824/hello-world' },
     { feature: 'prefix + regex', pattern: '/articles/{id:post-[0-9]+}/{slug:[^/]+}', uri: '/articles/xpost-824/hello-world' },
     { feature: 'optional segments', pattern: '/articles/({id:post-[0-9]+})?/({slug:[^/]+})?', uri: '/articles/post-824/hello-world/extra' },
+    { feature: 'catch-all needs at least one part (audit pilot F20, fixed, D-048)', pattern: '/shop/{category:.+}', uri: '/shop' },
   ])('$feature: $pattern does not match $uri', ({ pattern, uri }) => {
     expect(matchRoute(pattern, uri).status).toBe(404);
   });

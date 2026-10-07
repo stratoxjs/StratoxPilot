@@ -75,29 +75,37 @@ describe('HTML escaping of URI parts (audit pilot F6)', () => {
     expect(matchRoute('/{name:[^/]+}', '/a|b').vars.name).toEqual(['a|b']);
   });
 
-  test('does not match a literal route containing & against the same URI', () => {
-    expect(matchRoute('/a&b', '/a&b').status).toBe(404);
+  test('a literal route containing & matches the URI as it reads (D-048)', () => {
+    expect(matchRoute('/a&b', '/a&b').status).toBe(200);
+    expect(matchRoute('/a&b', '/a%26b').status).toBe(200);
   });
 
-  test('matches a literal route containing & only when the route is written escaped', () => {
-    expect(matchRoute('/a&amp;b', '/a&b').status).toBe(200);
+  test('a literal route written escaped no longer matches (D-048)', () => {
+    expect(matchRoute('/a&amp;b', '/a&b').status).toBe(404);
   });
 });
 
-// Every literal segment is used as a regular expression.
-describe('regex characters in literal segments (audit pilot F5)', () => {
-  test('lets . in a literal match any character', () => {
+// A literal segment matches the same text exactly; only {name:regex} is a regular expression (D-048).
+describe('regex characters in literal segments (audit pilot F5, fixed, D-048)', () => {
+  test('. in a literal is a dot', () => {
     expect(matchRoute('/file.txt', '/file.txt').status).toBe(200);
-    expect(matchRoute('/file.txt', '/fileXtxt').status).toBe(200);
+    expect(matchRoute('/file.txt', '/fileXtxt').status).toBe(404);
   });
 
-  test('treats parentheses in a literal as a group', () => {
-    expect(matchRoute('/a(b)', '/ab').status).toBe(200);
-    expect(matchRoute('/a(b)', '/a(b)').status).toBe(404);
+  test('parentheses in a literal are parentheses', () => {
+    expect(matchRoute('/a(b)', '/a(b)').status).toBe(200);
+    expect(matchRoute('/a(b)', '/ab').status).toBe(404);
   });
 
-  test.each(['/c++', '/other'])('a literal that is not a valid regex, /c++, matches nothing: %s is 404 (audit pilot F5, crash fixed)', (uri) => {
-    expect(matchRoute('/c++', uri).status).toBe(404);
+  test('/c++ matches /c++ and nothing else', () => {
+    expect(matchRoute('/c++', '/c++').status).toBe(200);
+    expect(matchRoute('/c++', '/c').status).toBe(404);
+    expect(matchRoute('/c++', '/other').status).toBe(404);
+  });
+
+  test('a literal is case-sensitive and whole: /about matches neither /About nor /aboutus', () => {
+    expect(matchRoute('/about', '/About').status).toBe(404);
+    expect(matchRoute('/about', '/aboutus').status).toBe(404);
   });
 
   test('routes after a literal that is not a valid regex still match', () => {
