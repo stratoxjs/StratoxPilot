@@ -52,12 +52,11 @@ router.post('/post/contact', function(params, request, path) {
 
 // Will catch 404 and 405 HTTP Status Errors codes
 // Not required you can also handle it directly in the dispatcher
-router.get('[STATUS_ERROR]', function(params, request, path, statusCode) {
-    if(statusCode === 404) {
-        console.log("404 Page not found", statusCode);
-    } else {
-        console.log("405 Method not allowed", statusCode);
-    }
+router.notFound(function(params, request, path, statusCode) {
+    console.log("404 Page not found", statusCode);
+});
+router.error(405, function(params, request, path, statusCode) {
+    console.log("405 Method not allowed", statusCode);
 });
 
 dispatcher.dispatcher(router, dispatcher.serverParams("fragment"), function(response, statusCode) {
@@ -150,7 +149,7 @@ One rule decides which route handles a request:
 
 1. Routes are tried in the order you registered them. The **first** route that matches the **whole** path and accepts the request method wins (status 200).
 2. If no route does, but a route for another method matches the whole path, the status is **405**. Otherwise it is **404**.
-3. On 404 and 405 the controller is your `[STATUS_ERROR]` route's, or `null`. A route that matched only the start of the path is never used, and `path`, `params` and `vars` are empty.
+3. On 404 and 405 the controller is the one you set with `router.notFound()` or `router.error()` for that status; without one, your `[STATUS_ERROR]` route's; without either, `null` (see [Catch status errors](#catch-status-errors)). A route that matched only the start of the path is never used, and `path`, `params` and `vars` are empty.
 4. Text outside curly brackets matches **exactly** (after URL decoding): `/file.txt` matches only `/file.txt`, and `/c++` only `/c++`. Only `{...}` is a regular expression.
 5. A catch-all `{name:.+}` needs at least one segment: `/shop/{category:.+}` does not match `/shop`. Register `/shop` on its own if you want both.
 
@@ -188,7 +187,23 @@ router.get('/articles/({id:post-[0-9]+})?/({slug:[^/]+})?', function(params, req
 It's important to note that you should not enclose the **leading slash** in brackets. The leading slash is automatically excluded from the pattern, ensuring the correct interpretation of the route.
 
 ### Catch status errors
-There is an optional and special router pattern that let's you catch HTTP Status Errors with in a router.
+When no route answers a request, the dispatcher gives status 404 (Not Found) or 405 (Method Not Allowed, see [How routes match](#how-routes-match)). You can give each status its own controller. Both are optional; without one, `response.controller` is `null` and you can handle the status in the dispatcher instead.
+```javascript
+// 404: no route matches the path
+router.notFound(function(params, request, path, statusCode) {
+    console.log("404 Page not found", statusCode);
+});
+
+// 405: a route matches the path, but not with this request method
+router.error(405, function(params, request, path, statusCode) {
+    console.log("405 Method not allowed", statusCode);
+});
+```
+* `router.notFound(controller, config)` is the same as `router.error(404, controller, config)`.
+* `router.error(status, controller, config)` takes 404 or 405; any other status throws an error.
+* They answer every request method (GET, POST, PUT, DELETE), and it does not matter where you register them. Registering a status again replaces its controller.
+
+The older special pattern `[STATUS_ERROR]` still works. It catches every error status that has no controller of its own:
 ```javascript
 router.get('[STATUS_ERROR]', function(params, request, path, statusCode) {
     if(statusCode === 404) {
