@@ -6,7 +6,12 @@
 export default class Router {
   static #validVerb = ['GET', 'POST', 'PUT', 'DELETE']; // Allowed verbs
 
+  static #errorStatuses = [404, 405]; // The error statuses the dispatcher gives
+
   #router = [];
+
+  // { status: { status, controller, config } } from notFound() and error(); not routes, so kept apart (D-050)
+  #errorControllers = {};
 
   // Backs only the duplicate-pattern check: the latest { pattern: controller } for each list of verbs.
   // The check is narrow on purpose until the next major (audit F1, pilot Group C).
@@ -94,7 +99,32 @@ export default class Router {
   }
 
   /**
-     * Get the controller of the [STATUS_ERROR] route, wherever it was registered
+     * Set the controller for 404 Not Found, for every request method
+     * @param  {mixed} controller   Whatever you want the router to execute
+     * @param  {object} config
+     * @return {void}
+     */
+  notFound(controller, config) {
+    this.error(404, controller, config);
+  }
+
+  /**
+     * Set the controller for one error status, for every request method.
+     * Registering a status again replaces its controller.
+     * @param  {int} status         404 or 405
+     * @param  {mixed} controller   Whatever you want the router to execute
+     * @param  {object} config
+     * @return {void}
+     */
+  error(status, controller, config) {
+    if (!Router.#errorStatuses.includes(status)) {
+      throw new Error(`Argument 1 (status) needs to be ${Router.#errorStatuses.join(' or ')}, got ${JSON.stringify(status)}.`);
+    }
+    this.#errorControllers[status] = { status, controller, config: (config ?? {}) };
+  }
+
+  /**
+     * Get the error controller for a status, wherever it was registered
      * @param  {int} status
      * @return {mixed|false} False for status 200 or when there is no error route
      */
@@ -103,7 +133,8 @@ export default class Router {
   }
 
   /**
-     * Get the [STATUS_ERROR] route itself (verb, pattern, controller, config)
+     * Get the error route for a status: the one from notFound() or error() for that status
+     * ({ status, controller, config }), else the [STATUS_ERROR] route (verb, pattern, controller, config)
      * @param  {int} status
      * @return {object|false} False for status 200 or when there is no error route
      */
@@ -111,6 +142,10 @@ export default class Router {
     if (status === 200) {
       return false;
     }
+    if (this.#errorControllers[status]) {
+      return this.#errorControllers[status];
+    }
+    // [STATUS_ERROR] stays as the alias for every error status without its own controller (D-050)
     const errorRoute = this.#router.findLast((route) => (
       route.pattern === '[STATUS_ERROR]' && route.verb.includes('GET')
     ));
