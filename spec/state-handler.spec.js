@@ -1,16 +1,6 @@
-import { beforeEach, describe, expect, test } from 'vitest';
+import { describe, expect, test } from 'vitest';
 import StateHandler from '../src/StateHandler';
-import { Dispatcher } from '../src/index';
-
-/**
- * The stored state is static and shared by every StateHandler (audit pilot F14).
- * pushState replaces it, which is the only way to reset it through the public API.
- */
-function resetSharedState() {
-  const handler = new StateHandler({}, { module: false });
-  handler.on('popstate', () => {});
-  handler.pushState('/', {});
-}
+import { Router, Dispatcher } from '../src/index';
 
 /**
  * A StateHandler with a popstate listener that records every event.
@@ -23,10 +13,6 @@ function listeningHandler(state = {}) {
   handler.on('popstate', (event) => events.push(event));
   return { handler, events };
 }
-
-beforeEach(() => {
-  resetSharedState();
-});
 
 test('is the class that Dispatcher.getStateHandler() returns', () => {
   expect(new Dispatcher().getStateHandler()).toBeInstanceOf(StateHandler);
@@ -198,10 +184,58 @@ describe('get', () => {
     expect(handler.get('value', 'default')).toBe('default');
   });
 
-  test('shares the stored state between StateHandler instances (audit pilot F14)', () => {
+  test('keeps the state of each StateHandler apart (audit pilot F14, fixed, D-050)', () => {
     new StateHandler().set({ shared: 1 });
 
-    expect(new StateHandler().get('shared')).toBe(1);
+    expect(new StateHandler().get('shared')).toBeUndefined();
+    expect(new StateHandler().get()).toEqual({});
+  });
+
+  test('a pushState on one StateHandler leaves the state of another as it was (audit pilot F14, fixed)', () => {
+    const { handler: first } = listeningHandler();
+    const { handler: second } = listeningHandler();
+    second.set({ kept: true });
+
+    first.pushState('/page', { count: 1 });
+
+    expect(first.get()).toEqual({ count: 1 });
+    expect(second.get()).toEqual({ kept: true });
+  });
+});
+
+describe('state per dispatcher (audit pilot F14, fixed, D-050)', () => {
+  /**
+   * A dispatcher on a router with one page, started on "/"
+   * @return {Dispatcher}
+   */
+  function startDispatcher() {
+    const router = new Router();
+    router.get('/', 'start');
+    router.get('/page', 'page');
+    const dispatcher = new Dispatcher();
+    dispatcher.dispatcher(router, dispatcher.request('path'), () => {});
+    return dispatcher;
+  }
+
+  test('a dispatcher does not see the state set through another dispatcher', () => {
+    const first = startDispatcher();
+    const second = startDispatcher();
+
+    first.getStateHandler().set({ count: 1 });
+
+    expect(first.getStateHandler().get('count', 0)).toBe(1);
+    expect(second.getStateHandler().get('count', 0)).toBe(0);
+  });
+
+  test('navigating with one dispatcher leaves the state of another as it was', () => {
+    const first = startDispatcher();
+    const second = startDispatcher();
+    second.getStateHandler().set({ count: 2 });
+
+    first.navigateTo('/page');
+
+    expect(first.getStateHandler().get().request.path).toBe('/page');
+    expect(second.getStateHandler().get()).toEqual({ count: 2 });
   });
 });
 

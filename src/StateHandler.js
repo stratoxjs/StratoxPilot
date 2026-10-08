@@ -14,7 +14,8 @@ export default class StateHandler {
 
   #currentState;
 
-  static #stateObject = {};
+  // The state that get, set, update and setDefault use; each handler, so each dispatcher, has its own (F14, D-050)
+  #stateObject = {};
 
   constructor(state, config = {}) {
     if (typeof state === 'function' || typeof state === 'object') {
@@ -90,7 +91,7 @@ export default class StateHandler {
     }
 
     this.#currentState = state;
-    StateHandler.#stateObject = state;
+    this.#stateObject = state;
     if (this.#usesBrowserHistory()) {
       window.history.pushState(state, titleStr, path);
     }
@@ -109,10 +110,10 @@ export default class StateHandler {
     */
     if(typeof key === "string" || typeof key === "number") {
       // Only a missing value gives the default; a stored 0, '', false or null is returned (audit F13)
-      const value = StateHandler.#stateObject?.[key];
+      const value = this.#stateObject?.[key];
       return (value === undefined) ? defaultVal : value;
     }
-    return StateHandler.#stateObject;
+    return this.#stateObject;
   }
 
   /**
