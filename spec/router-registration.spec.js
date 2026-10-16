@@ -283,4 +283,13 @@ describe('verb helpers', () => {
   test('validateVerb throws a TypeError for a string, because it expects an array', () => {
     expect(() => Router.validateVerb('get')).toThrow(TypeError);
   });
+
+  test('the verb helpers work when called on a subclass (audit pilot F31, fixed)', () => {
+    class MyRouter extends Router {}
+
+    expect(MyRouter.getValidVerbs()).toEqual(['GET', 'POST', 'PUT', 'DELETE']);
+    expect(MyRouter.isValidVerb('GET')).toBe(true);
+    expect(MyRouter.isValidVerb('PATCH')).toBe(false);
+    expect(MyRouter.validateVerb(['get'])).toEqual(['GET']);
+  });
 });
