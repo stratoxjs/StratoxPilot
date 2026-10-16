@@ -3,21 +3,50 @@
  * Author: Daniel Ronkainen
  * Apache License Version 2.0
  */
+
+/** A state object: what pushState, get, set, update and setDefault work with. */
+export type State = Record<string, unknown>;
+
+/** The constructor's state: an object, or a function that gets the event's state and returns one. */
+export type StateSource = State | ((state?: State) => State);
+
+/** Options for a StateHandler. */
+export interface StateHandlerConfig {
+  /** Write to window.history and listen on window, when there is one (default true). */
+  module?: boolean;
+}
+
+/**
+ * What an event handler gets: the data passed to emit(), or the browser's event, with `details`
+ * added: the constructor's state merged with `state`.
+ */
+export interface StateEvent {
+  state?: State | null;
+  details: State;
+  [key: string]: unknown;
+}
+
+/** A handler given to on(); it runs with `this` set to the StateHandler. */
+export type EventHandler = (this: StateHandler, event: StateEvent) => unknown;
+
+/** A handler as it is stored and added to window: it takes the emitted data or the browser's event. */
+type Listener = (eventArg: unknown) => unknown;
+
 export default class StateHandler {
-  #state = {};
+  #state: StateSource = {};
 
-  #config = {};
+  #config: StateHandlerConfig = {};
 
-  #handlers = {};
+  #handlers: Record<string, Listener[]> = {};
 
-  #unbind = {};
+  #unbind: Record<string, (() => void)[]> = {};
 
-  #currentState;
+  #currentState: State | undefined;
 
   // The state that get, set, update and setDefault use; each handler, so each dispatcher, has its own (F14, D-050)
-  #stateObject = {};
+  #stateObject: State = {};
 
-  constructor(state, config = {}) {
+  constructor(state?: StateSource, config: StateHandlerConfig = {}) {
     if (typeof state === 'function' || typeof state === 'object') {
       this.#state = state;
     }
@@ -26,11 +55,10 @@ export default class StateHandler {
 
   /**
    * Start event
-   * @param  {string} eventName
-   * @param  {callable} handler
-   * @return {void}
+   * @param  eventName
+   * @param  handler
    */
-  on(eventName, handler) {
+  on(eventName: string, handler: EventHandler): void {
     if (!this.#handlers[eventName]) this.#handlers[eventName] = [];
     const listener = this.#eventHandler(eventName, handler.bind(this));
     this.#handlers[eventName].push(listener);
@@ -38,10 +66,10 @@ export default class StateHandler {
 
   /**
    * Un bind / remove event: all of its handlers and window listeners (audit F15)
-   * @param  {string} eventName
-   * @return {bool} false when the event had no handlers
+   * @param  eventName
+   * @return false when the event had no handlers
    */
-  off(eventName) {
+  off(eventName: string): boolean {
     const hadHandlers = Array.isArray(this.#handlers[eventName]);
     (this.#unbind[eventName] ?? []).forEach((unbind) => unbind());
     delete this.#unbind[eventName];
@@ -51,11 +79,10 @@ export default class StateHandler {
 
   /**
    * Emit handler event
-   * @param  {string} eventName
-   * @param  {mixed} data       Data to pass to event
-   * @return {void}
+   * @param  eventName
+   * @param  data       Data to pass to event
    */
-  emit(eventName, data) {
+  emit(eventName: string, data?: unknown): void {
     if (typeof this.#handlers[eventName] !== 'object') {
       throw new Error(`Trying to emit to an event (${eventName}) that does not yet exist. If you are trying to navigate the page, then this should be done after the dispatcher.`);
     }
@@ -67,20 +94,18 @@ export default class StateHandler {
 
   /**
    * Will only emit sate and avoid to browse communication
-   * @return {void}
    */
-  emitPopState() {
+  emitPopState(): void {
     this.emit('popstate', {});
   }
 
   /**
    * Push to event state
-   * @param  {string} path
-   * @param  {object} state
-   * @param  {string} titleArg
-   * @return {void}
+   * @param  path
+   * @param  stateArg
+   * @param  titleArg
    */
-  pushState(path, stateArg, titleArg) {
+  pushState(path: string, stateArg?: State, titleArg?: string): void {
     const titleStr = (typeof titleArg === 'string') ? titleArg : '';
     const state = (stateArg === undefined) ? {} : stateArg;
     if (typeof path !== 'string') {
@@ -99,10 +124,11 @@ export default class StateHandler {
   }
 
   /**
-   * Get the active state object
-   * @return {object}
+   * Get the active state object, or one value of it
    */
-  get(key, defaultVal) {
+  get(): State;
+  get(key: string | number, defaultVal?: unknown): unknown;
+  get(key?: string | number, defaultVal?: unknown): unknown {
     /*
     if (this.#config.module && typeof window.history === 'object') {
       return window.history?.state;
@@ -119,10 +145,9 @@ export default class StateHandler {
   /**
    * Refresh the current state: emit popstate again without adding a history entry (audit F28).
    * Once pushState has run, the state of the current history entry is used and the argument is ignored.
-   * @param  {object} state  Used only before the first pushState
-   * @return {void}
+   * @param  state  Used only before the first pushState
    */
-  refresh(state = {}) {
+  refresh(state: State = {}): void {
     if (typeof state !== 'object') {
       throw new Error('Argument 1 (state) in pushState method has to be a object');
     }
@@ -133,16 +158,17 @@ export default class StateHandler {
     }
   }
 
-  refreshState(state = {}) {
+  refreshState(state: State = {}): void {
     this.refresh(state);
   }
 
   /**
    * Update the state
-   * @param  {Object} addStates
-   * @return {void}
+   * @param  addStates   An object to merge in, or the key to set to defaultVal
+   * @param  defaultVal
+   * @param  refresh     false skips the refresh
    */
-  update(addStates = {}, defaultVal, refresh) {
+  update(addStates: State | string | number = {}, defaultVal?: unknown, refresh?: boolean): void {
     const state = this.get();
     if(typeof addStates === "string" || typeof addStates === "number") {
       state[addStates] = defaultVal;
@@ -156,18 +182,18 @@ export default class StateHandler {
 
   /**
    * Set state
-   * @param {Object} addStates
-   * @param {Object} defaultStates
+   * @param addStates   An object to merge in, or the key to set to defaultVal
+   * @param defaultVal
    */
-  set(addStates = {}, defaultVal) {
+  set(addStates: State | string | number = {}, defaultVal?: unknown): void {
     this.update(addStates, defaultVal, false);
   }
 
   /**
    * Set default states
-   * @param {Object} addStates
+   * @param defaultArg  Values for the keys the state does not have yet
    */
-  setDefault(defaultArg) {
+  setDefault(defaultArg: State): void {
     if (typeof defaultArg !== 'object' || defaultArg === null) {
       throw new Error('The first argument of the Stratox builder "setDefault" must be an object!');
     }
@@ -181,10 +207,9 @@ export default class StateHandler {
 
   /**
    * Get state
-   * @param  {object} state
-   * @return {object}
+   * @param  state  Passed to the state function from the constructor
    */
-  getState(state) {
+  getState(state?: State): State {
     if (typeof this.#state === 'function') {
       return this.#state(state);
     }
@@ -193,42 +218,39 @@ export default class StateHandler {
 
   /**
    * Does this handler write to the browser history?
-   * @return {boolean}
    */
-  #usesBrowserHistory() {
+  #usesBrowserHistory(): boolean | undefined {
     return typeof window !== 'undefined' && this.#config.module && typeof window.history === 'object';
   }
 
   /**
    * The state of the page that is shown now. In a browser that is the current history entry,
    * which after Back or Forward is not the last state pushed.
-   * @return {object|null}
    */
-  #currentEntryState() {
+  #currentEntryState(): State | null | undefined {
     return this.#usesBrowserHistory() ? window.history.state : this.#currentState;
   }
 
   /**
    * Get and merge states
-   * @param  {object} state
-   * @return {object}
+   * @param  state
    */
-  #states(state) {
+  #states(state: State): State {
     return { ...this.getState(state), ...state };
   }
 
   /**
    * Create event
-   * @param  {string}   eventName
-   * @param  {callable} cb
-   * @return {callable}
+   * @param  eventName
+   * @param  cb
    */
-  #eventHandler(eventName, cb) {
-    const handler = (eventArg) => {
-      let event = eventArg;
+  #eventHandler(eventName: string, cb: (event: StateEvent) => unknown): Listener {
+    const handler = (eventArg: unknown) => {
+      // The emitted data or the browser's event gets `details`; an emitted null throws here
+      let event = eventArg as Partial<StateEvent>;
       if (typeof event !== 'object') event = {};
       event.details = this.#states((event.state ?? {}));
-      return cb(event);
+      return cb(event as StateEvent);
     };
 
     if (this.#config.module && typeof window === 'object') {
