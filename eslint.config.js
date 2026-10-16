@@ -1,5 +1,6 @@
 import globals from "globals";
 import pluginJs from "@eslint/js";
+import tseslint from "typescript-eslint";
 
 /** @type {import('eslint').Linter.Config[]} */
 export default [
@@ -11,6 +12,8 @@ export default [
     }
   },
   pluginJs.configs.recommended,
+  // TypeScript files only, so the JavaScript files keep the rules above (D-054)
+  ...tseslint.configs.recommended.map((config) => ({ ...config, files: ['**/*.ts'] })),
   {
     ignores: [
       'spec/', 
