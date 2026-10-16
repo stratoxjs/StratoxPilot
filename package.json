@@ -16,6 +16,11 @@
     "test:dev": "vitest",
     "test:coverage": "vitest run --coverage",
     "test:browser": "vitest run --config vitest.browser.config.js",
+    "build": "tsc -p tsconfig.json",
+    "typecheck": "tsc -p tsconfig.json --noEmit",
+    "test:dist": "npm run build && vitest run --mode dist",
+    "test:browser:dist": "npm run build && vitest run --config vitest.browser.config.js --mode dist",
+    "prepublishOnly": "npm run build",
     "lint": "eslint . --ignore-pattern 'spec/*' --ignore-pattern 'examples/*'",
     "lint:fix": "eslint --fix . --ignore-pattern 'spec/*' --ignore-pattern 'examples/*'"
   },
@@ -53,6 +58,7 @@
     "globals": "^17.13.0",
     "happy-dom": "^20.14.5",
     "playwright": "^1.63.0",
+    "typescript": "^7.0.2",
     "vitest": "^5.0.3"
   }
 }

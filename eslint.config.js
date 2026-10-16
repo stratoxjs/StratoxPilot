@@ -16,6 +16,7 @@ export default [
       'spec/', 
       '*.spec.js', 
       'coverage/',
+      'dist/',
     ]
   },
   {

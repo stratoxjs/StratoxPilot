@@ -1,6 +1,10 @@
 import { defineConfig } from 'vitest/config'
+import { distAlias } from './vitest.dist.js';
 
-export default defineConfig({
+export default defineConfig(({ mode }) => ({
+  resolve: {
+    alias: distAlias(mode),
+  },
   test: {
     exclude: [
       'node_modules',
@@ -10,4 +14,4 @@ export default defineConfig({
       include: ['src/**'],
     },
   }
-})
+}))
