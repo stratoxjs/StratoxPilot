@@ -185,7 +185,7 @@ export default class StateHandler {
    * @return {object}
    */
   getState(state) {
-    if (typeof this.#state === 'function' || this.#state === 'object') {
+    if (typeof this.#state === 'function') {
       return this.#state(state);
     }
     return (typeof this.#state === 'object') ? this.#state : {};
