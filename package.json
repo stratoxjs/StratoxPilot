@@ -51,6 +51,7 @@
   "license": "Apache-2.0",
   "devDependencies": {
     "@eslint/js": "^9.18.0",
+    "@typescript/native": "npm:typescript@^7.0.2",
     "@vitest/browser-playwright": "^5.0.3",
     "@vitest/coverage-v8": "^5.0.3",
     "eslint": "^9.18.0",
@@ -58,7 +59,8 @@
     "globals": "^17.13.0",
     "happy-dom": "^20.14.5",
     "playwright": "^1.63.0",
-    "typescript": "^7.0.2",
+    "typescript": "npm:@typescript/typescript6@^6.0.2",
+    "typescript-eslint": "^8.71.2",
     "vitest": "^5.0.3"
   }
 }
