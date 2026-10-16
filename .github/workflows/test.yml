@@ -25,3 +25,6 @@ jobs:
       - run: npm install
       - run: npm test
       - run: npm run lint
+      - run: npm run typecheck
+      # The suite again, against the tsc build in dist/ (roadmap 5.1, D-052)
+      - run: npm run test:dist
