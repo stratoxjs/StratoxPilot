@@ -76,62 +76,80 @@ describe('invalid arguments', () => {
   });
 });
 
-// The check compares only with the most recent route for the same verb
-// (or the same array of verbs), and only when its controller is a string.
-describe('duplicate pattern check (audit pilot F1)', () => {
+// A pattern can be registered once per method (audit pilot F1, fixed, D-051)
+describe('duplicate pattern check (audit pilot F1, fixed, D-051)', () => {
   test('throws when the same verb and pattern are registered twice in a row', () => {
     const router = new Router();
     router.get('/page', 'first');
 
-    expect(() => router.get('/page', 'second')).toThrow('Argument 2 (pattern: /page) already exists.');
+    expect(() => router.get('/page', 'second')).toThrow('Argument 2 (pattern: /page) already exists for GET.');
   });
 
-  test('does not throw when another route for the same verb was registered in between', () => {
+  test('throws when another route for the same verb was registered in between', () => {
     const router = new Router();
     router.get('/page', 'first');
     router.get('/other', 'other');
-    router.get('/page', 'second');
 
-    expect(router.getRouters()).toHaveLength(3);
+    expect(() => router.get('/page', 'second')).toThrow('Argument 2 (pattern: /page) already exists for GET.');
   });
 
-  test('does not throw when the controllers are functions', () => {
+  test('throws when the controllers are functions', () => {
     const router = new Router();
     router.get('/page', () => 'first');
-    router.get('/page', () => 'second');
 
-    expect(router.getRouters()).toHaveLength(2);
+    expect(() => router.get('/page', () => 'second')).toThrow('already exists for GET.');
+  });
+
+  test('throws for a lower-case verb registered twice, because verbs are compared upper-cased', () => {
+    const router = new Router();
+    router.map('get', '/page', 'first');
+
+    expect(() => router.map('get', '/page', 'second')).toThrow('already exists for GET.');
+    expect(() => router.get('/page', 'third')).toThrow('already exists for GET.');
+  });
+
+  test.each([
+    { first: ['GET', 'POST'], second: ['GET', 'POST'], taken: 'GET, POST' },
+    { first: ['GET', 'POST'], second: ['GET'], taken: 'GET' },
+    { first: ['POST'], second: ['GET', 'POST'], taken: 'POST' },
+  ])('throws when $second shares a verb with an earlier $first route', ({ first, second, taken }) => {
+    const router = new Router();
+    router.map(first, '/page', 'first');
+
+    expect(() => router.map(second, '/page', 'second')).toThrow(`already exists for ${taken}.`);
+  });
+
+  test('leaves the routes as they were when it throws', () => {
+    const router = new Router();
+    router.get('/page', 'first');
+
+    expect(() => router.get('/page', 'second')).toThrow();
+    expect(router.getRouters().map((route) => route.controller)).toEqual(['first']);
   });
 
   test('does not throw for the same pattern with another verb', () => {
     const router = new Router();
     router.get('/page', 'read');
     router.post('/page', 'write');
+    router.map(['PUT', 'DELETE'], '/page', 'change');
+
+    expect(router.getRouters()).toHaveLength(3);
+  });
+
+  test('compares patterns as written, so two patterns for the same paths are both kept', () => {
+    const router = new Router();
+    router.get('/{id:[0-9]+}', 'first');
+    router.get('/{number:[0-9]+}', 'second');
 
     expect(router.getRouters()).toHaveLength(2);
   });
 
-  test('throws for the same array of verbs registered twice in a row', () => {
+  test('leaves out [STATUS_ERROR]: it may be registered again, and the last one wins', () => {
     const router = new Router();
-    router.map(['GET', 'POST'], '/page', 'first');
+    router.get('[STATUS_ERROR]', 'first-error');
+    router.get('[STATUS_ERROR]', 'second-error');
 
-    expect(() => router.map(['GET', 'POST'], '/page', 'second')).toThrow('already exists');
-  });
-
-  test('does not compare a single verb with an earlier array of verbs', () => {
-    const router = new Router();
-    router.map(['GET', 'POST'], '/page', 'first');
-    router.get('/page', 'second');
-
-    expect(router.getRouters()).toHaveLength(2);
-  });
-
-  test('does not throw for a lower-case verb registered twice, because it is checked before upper-casing (guard, roadmap 4.2)', () => {
-    const router = new Router();
-    router.map('get', '/page', 'first');
-    router.map('get', '/page', 'second');
-
-    expect(router.getRouters().map((route) => route.verb)).toEqual([['GET'], ['GET']]);
+    expect(router.getStatusError(404)).toBe('second-error');
   });
 });
 
