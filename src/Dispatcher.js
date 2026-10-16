@@ -122,8 +122,7 @@ export default class Dispatcher {
    */
   serverParams(key, obj) {
     if (typeof key === 'string') {
-      const inst = this;
-      return () => inst.#valueOrMerged(inst.#handler.getState().server[key], obj);
+      return () => this.#valueOrMerged(this.#handler.getState().server[key], obj);
     }
     return this.#handler.getState().server;
   }
@@ -136,8 +135,7 @@ export default class Dispatcher {
    */
   request(key, obj) {
     if (typeof key === 'string') {
-      const inst = this;
-      return () => inst.#valueOrMerged((inst.#state.request?.[key] ?? '/'), obj);
+      return () => this.#valueOrMerged((this.#state.request?.[key] ?? '/'), obj);
     }
     return this.#state.request;
   }
@@ -178,20 +176,19 @@ export default class Dispatcher {
    * @return {void}
    */
   dispatcher(routeCollection, path, fn) {
-    const inst = this;
     // if(routeCollection.hasPostRoutes())
     this.#catchFormEvents();
     this.#catchLinkEvents();
     this.#handler.on('popstate', (eventArg) => {
       const event = eventArg;
-      event.details.request.get = inst.buildQueryObj(event.details.request.get);
-      inst.#state = inst.#assignRequest(event.details);
-      const uriPath = inst.baseDir(inst.#getDynUri(path).toString());
-      const dispatcher = inst.validateDispatch(routeCollection, inst.#state.method, uriPath);
+      event.details.request.get = this.buildQueryObj(event.details.request.get);
+      this.#state = this.#assignRequest(event.details);
+      const uriPath = this.baseDir(this.#getDynUri(path).toString());
+      const matched = this.validateDispatch(routeCollection, this.#state.method, uriPath);
       // Back and Forward fire the browser's own popstate event; pushState and refresh emit a plain object (audit F30)
       const fromHistory = (typeof PopStateEvent === 'function' && event instanceof PopStateEvent);
-      const response = inst.#assignResponse({ ...dispatcher, fromHistory });
-      fn.apply(inst, [response, response.status]);
+      const response = this.#assignResponse({ ...matched, fromHistory });
+      fn.apply(this, [response, response.status]);
     });
 
     this.#handler.emitPopState();
@@ -224,12 +221,12 @@ export default class Dispatcher {
    * On 404 and 405 the controller is the [STATUS_ERROR] route's, or null.
    * @param  {Router|array} routeCollection
    * @param  {string} method  Verb (GET, POST)
-   * @param  {uri} dipatch    The uri/hash to validate
+   * @param  {uri} uriPath    The uri/hash to validate
    * @return {object|false}
    */
-  validateDispatch(routeCollection, method, dipatch) {
+  validateDispatch(routeCollection, method, uriPath) {
     const router = this.getRouterData(routeCollection);
-    const uri = dipatch.split('/');
+    const uri = uriPath.split('/');
     const found = this.#findRoute(router, method, uri);
     const errorRoute = routeCollection.getStatusErrorRoute(found.status);
     const route = errorRoute || found.route;
@@ -342,7 +339,7 @@ export default class Dispatcher {
           name,
           value: isPattern ? value : segment,
           regex: isPattern ? this.#segmentRegex(value) : undefined,
-          isRequired: this.#isLossyParam(segment),
+          isRequired: this.#isRequiredSegment(segment),
         };
       });
       this.#compiledPatterns.set(pattern, segments);
@@ -441,12 +438,11 @@ export default class Dispatcher {
    * @return {StateHandler}
    */
   initStateHandler(serverParams) {
-    const inst = this;
     return new StateHandler(() => {
       const location = (typeof window === 'object') ? (window?.location ?? {}) : {};
-      const query = inst.#paramsToObj(location.search ?? '');
+      const query = this.#paramsToObj(location.search ?? '');
       const hash = ((typeof location.hash === 'string') ? location.hash : '');
-      const fragment = hash.replace(`#${inst.#configs.fragmentPrefix}`, '');
+      const fragment = hash.replace(`#${this.#configs.fragmentPrefix}`, '');
       return {
         method: 'GET',
         server: {
@@ -456,7 +452,7 @@ export default class Dispatcher {
           path: (location.pathname ?? '/'),
           auto: (location.pathname && location.pathname.length > 1 ? location.pathname : `/${fragment}`),
           query,
-          ...inst.#getDynUri(serverParams),
+          ...this.#getDynUri(serverParams),
         },
         request: {
           get: query,
@@ -498,7 +494,6 @@ export default class Dispatcher {
    * @return {void}
    */
   #catchFormEvents() {
-    const inst = this;
     if (this.#configs.catchForms && (typeof document === 'object')) {
       document.addEventListener('submit', (event) => {
         const url = new URL(event.target.action);
@@ -507,16 +502,16 @@ export default class Dispatcher {
           return;
         }
         event.preventDefault();
-        inst.#form = event.target;
-        const formData = new FormData(inst.#form);
-        const method = inst.getFormMethod(inst.#form).toUpperCase();
+        this.#form = event.target;
+        const formData = new FormData(this.#form);
+        const method = this.getFormMethod(this.#form).toUpperCase();
         if (method === 'POST' || method === 'PUT') {
-          inst.mapTo(method, url, inst.#paramsToObj(url.search), Object.fromEntries(formData));
+          this.mapTo(method, url, this.#paramsToObj(url.search), Object.fromEntries(formData));
         } else {
-          const searchObj = inst.#paramsToObj(url.search);
-          const formObj = inst.#paramsToObj(formData);
+          const searchObj = this.#paramsToObj(url.search);
+          const formObj = this.#paramsToObj(formData);
           const assignObj = Object.assign(searchObj, formObj);
-          inst.navigateTo(url, assignObj);
+          this.navigateTo(url, assignObj);
         }
       });
     }
@@ -599,9 +594,9 @@ export default class Dispatcher {
    * @return {object} { isPattern, name, value }; name is '' for an unnamed pattern, undefined for a literal
    */
   #getMatchPattern(matchStr) {
-    const matchPatter = matchStr.match(/{(.*?)}/g);
-    if (matchPatter) {
-      const patterns = matchPatter.map((item) => item.slice(1, -1));
+    const bracedParts = matchStr.match(/{(.*?)}/g);
+    if (bracedParts) {
+      const patterns = bracedParts.map((item) => item.slice(1, -1));
       const extractPattern = patterns[0].split(':');
       const length = extractPattern.length - 1;
       const patternValue = this.#unescapeForwardSlash(extractPattern[length].trim());
@@ -615,11 +610,11 @@ export default class Dispatcher {
   }
 
   /**
-   * Check if is a loosy pattern parameter
+   * Is the route segment required? An optional one is written "(...)?"
    * @param  {string}  pattern
    * @return {Boolean}
    */
-  #isLossyParam(pattern) {
+  #isRequiredSegment(pattern) {
     const value = pattern.substring(pattern.length - 2);
     return (value !== '?(' && value !== ')?');
   }
