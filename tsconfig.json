@@ -8,6 +8,7 @@
     "checkJs": false,
     "declaration": false,
     "sourceMap": true,
+    "inlineSources": true,
     "rootDir": "src",
     "outDir": "dist"
   },
