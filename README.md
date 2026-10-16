@@ -153,7 +153,9 @@ One rule decides which route handles a request:
 4. Text outside curly brackets matches **exactly** (after URL decoding): `/file.txt` matches only `/file.txt`, and `/c++` only `/c++`. Only `{...}` is a regular expression.
 5. A catch-all `{name:.+}` needs at least one segment: `/shop/{category:.+}` does not match `/shop`. Register `/shop` on its own if you want both.
 
-Because the first match wins, register specific routes before general ones:
+Because the first match wins, a second route with the same pattern and method could never be reached, so registering one throws an error (`Argument 2 (pattern: /about) already exists for GET.`). The same pattern for another method is fine. Patterns are compared as written: `/{id:[0-9]+}` and `/{number:[0-9]+}` are both accepted, and the first one wins.
+
+Register specific routes before general ones:
 
 ```javascript
 router.get('/about', aboutPage);          // matches /about

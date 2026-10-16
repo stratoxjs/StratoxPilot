@@ -13,10 +13,6 @@ export default class Router {
   // { status: { status, controller, config } } from notFound() and error(); not routes, so kept apart (D-050)
   #errorControllers = {};
 
-  // Backs only the duplicate-pattern check: the latest { pattern: controller } for each list of verbs.
-  // The check is narrow on purpose until the next major (audit F1, pilot Group C).
-  #latestPatternByVerbs = {};
-
   /**
      * Return the router data
      * @return {array}
@@ -43,19 +39,34 @@ export default class Router {
     if (typeof pattern !== 'string') {
       throw new Error('Argument 2 (pattern) needs to be a string.');
     }
-    // Checked before the verbs are upper-cased, so "get" is not compared with "GET"
-    if (typeof this.#latestPatternByVerbs[verb]?.[pattern] === 'string') {
-      throw new Error(`Argument 2 (pattern: ${pattern}) already exists.`);
-    }
 
     const verbs = Router.validateVerb(verb);
+    const takenVerbs = this.#takenVerbs(pattern, verbs);
+    if (takenVerbs.length > 0) {
+      throw new Error(`Argument 2 (pattern: ${pattern}) already exists for ${takenVerbs.join(', ')}.`);
+    }
     this.#router.push({
       verb: verbs,
       pattern,
       controller,
       config: (config ?? {}),
     });
-    this.#latestPatternByVerbs[verbs] = { [pattern]: controller };
+  }
+
+  /**
+     * The verbs an earlier route already serves for this pattern. Under the first-match rule (D-048)
+     * a second route for them could never be reached (audit F1, D-051). [STATUS_ERROR] is not a path:
+     * it may be registered again, and the last one wins, like error() (D-050).
+     * @param  {string} pattern
+     * @param  {array}  verbs   Upper-cased
+     * @return {array}
+     */
+  #takenVerbs(pattern, verbs) {
+    if (pattern === '[STATUS_ERROR]') {
+      return [];
+    }
+    const sameRoutes = this.#router.filter((route) => route.pattern === pattern);
+    return verbs.filter((verb) => sameRoutes.some((route) => route.verb.includes(verb)));
   }
 
   /**
