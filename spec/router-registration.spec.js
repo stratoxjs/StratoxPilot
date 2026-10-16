@@ -154,6 +154,13 @@ describe('duplicate pattern check (audit pilot F1, fixed, D-051)', () => {
 });
 
 describe('getStatusError', () => {
+  test.each([null, undefined])('returns false when the error route has the controller %j', (controller) => {
+    const router = new Router();
+    router.get('[STATUS_ERROR]', controller);
+
+    expect(router.getStatusError(404)).toBe(false);
+  });
+
   test('finds the error route wherever it was registered (audit pilot F1, fixed)', () => {
     const router = new Router();
     router.get('[STATUS_ERROR]', 'error');
