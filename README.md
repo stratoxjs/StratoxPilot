@@ -152,6 +152,7 @@ One rule decides which route handles a request:
 3. On 404 and 405 the controller is the one you set with `router.notFound()` or `router.error()` for that status; without one, your `[STATUS_ERROR]` route's; without either, `null` (see [Catch status errors](#catch-status-errors)). A route that matched only the start of the path is never used, and `path`, `params` and `vars` are empty.
 4. Text outside curly brackets matches **exactly** (after URL decoding): `/file.txt` matches only `/file.txt`, and `/c++` only `/c++`. Only `{...}` is a regular expression.
 5. A catch-all `{name:.+}` needs at least one segment: `/shop/{category:.+}` does not match `/shop`. Register `/shop` on its own if you want both.
+6. The path is split on `/` before it is URL decoded, so an encoded slash (`%2F`) stays inside its segment: `/a%2Fb` is one segment, `a/b`. It does not match `/{name:[^/]+}`, and `/{name:.+}` gives `params.name === 'a/b'`.
 
 Because the first match wins, a second route with the same pattern and method could never be reached, so registering one throws an error (`Argument 2 (pattern: /about) already exists for GET.`). The same pattern for another method is fine. Patterns are compared as written: `/{id:[0-9]+}` and `/{number:[0-9]+}` are both accepted, and the first one wins.
 

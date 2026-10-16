@@ -27,15 +27,16 @@ describe('percent-encoding and plain special characters', () => {
     expect(result.vars.name).toEqual([value]);
   });
 
-  test('returns 404 for an encoded slash on a [^/]+ route (audit pilot F22)', () => {
+  test('returns 404 for an encoded slash on a [^/]+ route (audit pilot F22, documented, D-051)', () => {
     expect(matchRoute('/{name:[^/]+}', '/a%2Fb').status).toBe(404);
   });
 
-  test('keeps an encoded slash inside one vars item for .+ (audit pilot F22)', () => {
+  test('keeps an encoded slash inside one segment for .+ (audit pilot F22, documented, D-051)', () => {
     const result = matchRoute('/{name:.+}', '/a%2Fb');
 
     expect(result.status).toBe(200);
     expect(result.vars.name).toEqual(['a/b']);
+    expect(result.params.name).toBe('a/b');
   });
 
   test.each([
