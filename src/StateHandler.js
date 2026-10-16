@@ -32,8 +32,8 @@ export default class StateHandler {
    */
   on(eventName, handler) {
     if (!this.#handlers[eventName]) this.#handlers[eventName] = [];
-    const hand = this.#eventHandler(eventName, handler.bind(this));
-    this.#handlers[eventName].push(hand);
+    const listener = this.#eventHandler(eventName, handler.bind(this));
+    this.#handlers[eventName].push(listener);
   }
 
   /**
@@ -224,11 +224,10 @@ export default class StateHandler {
    * @return {callable}
    */
   #eventHandler(eventName, cb) {
-    const inst = this;
     const handler = (eventArg) => {
       let event = eventArg;
       if (typeof event !== 'object') event = {};
-      event.details = inst.#states((event.state ?? {}));
+      event.details = this.#states((event.state ?? {}));
       return cb(event);
     };
 
