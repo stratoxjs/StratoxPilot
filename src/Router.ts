@@ -209,7 +209,7 @@ export default class Router<Controller = unknown> {
    * @return A copy, so changing it does not change which verbs are valid
    */
   static getValidVerbs(): HttpVerb[] {
-    return [...this.#validVerb];
+    return [...Router.#validVerb];
   }
 
   /**
@@ -217,7 +217,7 @@ export default class Router<Controller = unknown> {
    * @param  verb  Method to test for, upper-case
    */
   static isValidVerb(verb: string): verb is HttpVerb {
-    return this.#validVerb.some((validVerb) => validVerb === verb);
+    return Router.#validVerb.some((validVerb) => validVerb === verb);
   }
 
   /**
