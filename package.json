@@ -5,6 +5,13 @@
   "description": "Stratox Pilot is a JavaScript Router Library that enables precise navigation within web applications through the use of regular expressions for route definition.",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "default": "./dist/index.js"
+    },
+    "./package.json": "./package.json"
+  },
   "files": [
     "dist"
   ],
