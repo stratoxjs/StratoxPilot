@@ -14,6 +14,13 @@ export default [
   pluginJs.configs.recommended,
   // TypeScript files only, so the JavaScript files keep the rules above (D-054)
   ...tseslint.configs.recommended.map((config) => ({ ...config, files: ['**/*.ts'] })),
+  // Unused parameters (a field method's helper) and skipped array entries ([key, value]) are fine (D-059)
+  {
+    files: ['**/*.ts'],
+    rules: {
+      '@typescript-eslint/no-unused-vars': ['error', { args: 'none', destructuredArrayIgnorePattern: '.' }],
+    },
+  },
   {
     ignores: [
       'spec/', 
