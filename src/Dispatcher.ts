@@ -1,7 +1,7 @@
+import type {StateEvent} from './StateHandler.js';
 import StateHandler from './StateHandler.js';
-import type { StateEvent } from './StateHandler.js';
+import type {HttpVerb, Route, RouteConfig} from './Router.js';
 import Router from './Router.js';
-import type { HttpVerb, Route, RouteConfig } from './Router.js';
 
 /** A value, or a function that returns it each time it is needed (serverParams(key) gives one). */
 export type Dynamic<T> = T | (() => T);
@@ -223,8 +223,6 @@ export default class Dispatcher {
 
   /**
    * Get serverParams as dynamic variable
-   * @param  key  Get param, if not specified then get all
-   * @param  obj  Add object that you want to merge current param with (KEY is required)
    * @return A function that reads the param when called, or all params
    */
   serverParams(): ServerParams;
@@ -238,8 +236,6 @@ export default class Dispatcher {
 
   /**
    * Get request as dynamic variable
-   * @param  key  Get param, if not specified then get all
-   * @param  obj  Add object that you want to merge current param with (KEY is required)
    * @return A function that reads the param when called, or the whole request (undefined before the first dispatch)
    */
   request(): RequestState['request'] | undefined;
@@ -430,8 +426,7 @@ export default class Dispatcher {
           const position = (x - 1) < 0 ? 0 : (x - 1);
           vars[segment.name ?? position] = part;
           // params: the same parts as plain text, decoded and joined; an unnamed regex by position (D-049)
-          const text = parts.slice(0, part.length).map((uriPart) => this.#decodePart(uriPart)).join('/');
-          params[segment.name || position] = text;
+          params[segment.name || position] = parts.slice(0, part.length).map((uriPart) => this.#decodePart(uriPart)).join('/');
         }
         path = path.concat(part);
         parts = parts.slice(part.length);
@@ -750,7 +745,7 @@ export default class Dispatcher {
    * @param  pattern
    */
   #unescapeForwardSlash(pattern: string): string {
-    return pattern.replace(/\[#SC#\]/g, '/');
+    return pattern.replace(/\[#SC#]/g, '/');
   }
 
   /**
